@@ -7,20 +7,32 @@ import 'package:edn_checker/models/edn_model.dart';
 import 'package:edn_checker/models/part_model.dart';
 
 class LocalStorageService {
+  // ==========================================
+  // STORAGE KEY
+  // ==========================================
+
   static const String _ednKey = 'saved_edn';
+
+  static const String _dealerProfileKey =
+      'dealer_profile';
 
   // ==========================================
   // SAVE EDN
   // ==========================================
 
-  Future<void> saveEdn(EdnModel edn) async {
-    final prefs = await SharedPreferences.getInstance();
+  Future<void> saveEdn(
+    EdnModel edn,
+  ) async {
+    final prefs =
+        await SharedPreferences.getInstance();
 
     final data = {
       'fileName': edn.fileName,
+
       'cases': edn.cases.map((caseModel) {
         return {
           'caseNo': caseModel.caseNo,
+
           'parts': caseModel.parts.map((part) {
             return {
               'partNo': part.partNo,
@@ -44,9 +56,11 @@ class LocalStorageService {
   // ==========================================
 
   Future<EdnModel?> loadEdn() async {
-    final prefs = await SharedPreferences.getInstance();
+    final prefs =
+        await SharedPreferences.getInstance();
 
-    final savedData = prefs.getString(_ednKey);
+    final savedData =
+        prefs.getString(_ednKey);
 
     if (savedData == null) {
       return null;
@@ -67,21 +81,27 @@ class LocalStorageService {
         final List<PartModel> parts =
             partsData.map((partData) {
           return PartModel(
-            partNo: partData['partNo'] ?? '',
-            partName: partData['partName'] ?? '',
-            targetQty: partData['targetQty'] ?? 0,
-            scannedQty: partData['scannedQty'] ?? 0,
+            partNo:
+                partData['partNo'] ?? '',
+            partName:
+                partData['partName'] ?? '',
+            targetQty:
+                partData['targetQty'] ?? 0,
+            scannedQty:
+                partData['scannedQty'] ?? 0,
           );
         }).toList();
 
         return CaseModel(
-          caseNo: caseData['caseNo'] ?? '',
+          caseNo:
+              caseData['caseNo'] ?? '',
           parts: parts,
         );
       }).toList();
 
       return EdnModel(
-        fileName: data['fileName'] ?? '',
+        fileName:
+            data['fileName'] ?? '',
         cases: cases,
       );
     } catch (_) {
@@ -94,8 +114,85 @@ class LocalStorageService {
   // ==========================================
 
   Future<void> clearEdn() async {
-    final prefs = await SharedPreferences.getInstance();
+    final prefs =
+        await SharedPreferences.getInstance();
 
-    await prefs.remove(_ednKey);
+    await prefs.remove(
+      _ednKey,
+    );
+  }
+
+  // ==========================================
+  // SAVE DEALER PROFILE
+  // ==========================================
+
+  Future<void> saveDealerProfile({
+    required String dealerName,
+    required String dealerCode,
+    required String dealerAddress,
+  }) async {
+    final prefs =
+        await SharedPreferences.getInstance();
+
+    final data = {
+      'dealerName': dealerName,
+      'dealerCode': dealerCode,
+      'dealerAddress': dealerAddress,
+    };
+
+    await prefs.setString(
+      _dealerProfileKey,
+      jsonEncode(data),
+    );
+  }
+
+  // ==========================================
+  // LOAD DEALER PROFILE
+  // ==========================================
+
+  Future<Map<String, String>?>
+      loadDealerProfile() async {
+    final prefs =
+        await SharedPreferences.getInstance();
+
+    final savedData =
+        prefs.getString(
+      _dealerProfileKey,
+    );
+
+    if (savedData == null) {
+      return null;
+    }
+
+    try {
+      final Map<String, dynamic> data =
+          jsonDecode(savedData);
+
+      return {
+        'dealerName':
+            data['dealerName']?.toString() ?? '',
+
+        'dealerCode':
+            data['dealerCode']?.toString() ?? '',
+
+        'dealerAddress':
+            data['dealerAddress']?.toString() ?? '',
+      };
+    } catch (_) {
+      return null;
+    }
+  }
+
+  // ==========================================
+  // CLEAR DEALER PROFILE
+  // ==========================================
+
+  Future<void> clearDealerProfile() async {
+    final prefs =
+        await SharedPreferences.getInstance();
+
+    await prefs.remove(
+      _dealerProfileKey,
+    );
   }
 }

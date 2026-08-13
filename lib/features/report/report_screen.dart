@@ -7,262 +7,508 @@ import 'package:printing/printing.dart';
 import '../../models/case_model.dart';
 import '../../models/part_model.dart';
 import '../../providers/scanner_provider.dart';
+import '../../core/services/local_storage_service.dart';
 
-class ReportScreen extends StatelessWidget {
+class ReportScreen extends StatefulWidget {
   const ReportScreen({super.key});
+
+  @override
+  State<ReportScreen> createState() =>
+      _ReportScreenState();
+}
+
+class _ReportScreenState extends State<ReportScreen> {
+  // =============================================================
+  // STORAGE
+  // =============================================================
+
+  final LocalStorageService _storage =
+      LocalStorageService();
+
+  // =============================================================
+  // PROFILE DATA
+  // =============================================================
+
+  String _dealerName =
+      'Nama Dealer Belum Diatur';
+
+  String _dealerCode = '';
+
+  String _dealerAddress = '';
+
+  bool _profileLoading = true;
+
+  // =============================================================
+  // INIT
+  // =============================================================
+
+  @override
+  void initState() {
+    super.initState();
+
+    _loadProfile();
+  }
+
+  // =============================================================
+  // LOAD PROFILE
+  // =============================================================
+
+  Future<void> _loadProfile() async {
+    final profile =
+        await _storage.loadDealerProfile();
+
+    if (!mounted) {
+      return;
+    }
+
+    if (profile != null) {
+      setState(() {
+        _dealerName =
+            profile['dealerName'] ?? '';
+
+        _dealerCode =
+            profile['dealerCode'] ?? '';
+
+        _dealerAddress =
+            profile['dealerAddress'] ?? '';
+
+        _profileLoading = false;
+      });
+    } else {
+      setState(() {
+        _profileLoading = false;
+      });
+    }
+  }
+
+  // =============================================================
+  // REFRESH PROFILE
+  // =============================================================
+
+  Future<void> _refreshProfile() async {
+    await _loadProfile();
+  }
+
+  // =============================================================
+  // BUILD
+  // =============================================================
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey.shade100,
+      backgroundColor:
+          Colors.grey.shade100,
+
+      // =========================================================
+      // APP BAR
+      // =========================================================
 
       appBar: AppBar(
         title: const Text(
           'Report',
           style: TextStyle(
-            fontWeight: FontWeight.bold,
+            fontWeight:
+                FontWeight.bold,
           ),
         ),
+
         centerTitle: true,
-      ),
 
-      body: Consumer<ScannerProvider>(
-        builder: (context, provider, child) {
-          final edn = provider.currentEdn;
+        // =======================================================
+        // EXPORT PDF DI POJOK KANAN ATAS
+        // =======================================================
 
-          if (edn == null) {
-            return const Center(
-              child: Padding(
-                padding: EdgeInsets.all(24),
-                child: Column(
-                  mainAxisAlignment:
-                      MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Icons.description_outlined,
-                      size: 60,
-                      color: Colors.grey,
-                    ),
+        actions: [
+          Consumer<ScannerProvider>(
+            builder:
+                (context, provider, child) {
+              final edn =
+                  provider.currentEdn;
 
-                    SizedBox(height: 16),
-
-                    Text(
-                      'Belum ada EDN',
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight:
-                            FontWeight.bold,
-                      ),
-                    ),
-
-                    SizedBox(height: 8),
-
-                    Text(
-                      'Silakan upload EDN terlebih dahulu.',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: Colors.grey,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            );
-          }
-
-          // =====================================================
-          // HITUNG DATA
-          // =====================================================
-
-          final List<_Discrepancy> discrepancies = [];
-
-          int completedPart = 0;
-          int totalPart = 0;
-
-          for (final caseModel in edn.cases) {
-            totalPart += caseModel.parts.length;
-
-            for (final part in caseModel.parts) {
-              if (part.scannedQty == part.targetQty) {
-                completedPart++;
+              if (edn == null) {
+                return const SizedBox.shrink();
               }
 
-              final difference =
-                  part.scannedQty -
-                  part.targetQty;
+              return IconButton(
+                tooltip:
+                    'Export PDF',
 
-              if (difference != 0) {
-                discrepancies.add(
-                  _Discrepancy(
-                    caseNo: caseModel.caseNo,
-                    partNo: part.partNo,
-                    targetQty: part.targetQty,
-                    scannedQty: part.scannedQty,
-                    difference: difference,
+                icon: const Icon(
+                  Icons.picture_as_pdf,
+                ),
+
+                onPressed:
+                    _profileLoading
+                        ? null
+                        : () async {
+                            await _handleExportPdf(
+                              context,
+                              provider,
+                            );
+                          },
+              );
+            },
+          ),
+        ],
+      ),
+
+      // =========================================================
+      // BODY
+      // =========================================================
+
+      body: RefreshIndicator(
+        onRefresh:
+            _refreshProfile,
+
+        child:
+            Consumer<ScannerProvider>(
+          builder:
+              (context, provider, child) {
+            final edn =
+                provider.currentEdn;
+
+            // ===================================================
+            // BELUM ADA EDN
+            // ===================================================
+
+            if (edn == null) {
+              return const Center(
+                child: Padding(
+                  padding:
+                      EdgeInsets.all(24),
+
+                  child: Column(
+                    mainAxisAlignment:
+                        MainAxisAlignment.center,
+
+                    children: [
+                      Icon(
+                        Icons
+                            .description_outlined,
+                        size: 60,
+                        color:
+                            Colors.grey,
+                      ),
+
+                      SizedBox(
+                        height: 16,
+                      ),
+
+                      Text(
+                        'Belum ada EDN',
+                        style:
+                            TextStyle(
+                          fontSize: 20,
+                          fontWeight:
+                              FontWeight.bold,
+                        ),
+                      ),
+
+                      SizedBox(
+                        height: 8,
+                      ),
+
+                      Text(
+                        'Silakan upload EDN terlebih dahulu.',
+                        textAlign:
+                            TextAlign.center,
+                        style:
+                            TextStyle(
+                          color:
+                              Colors.grey,
+                        ),
+                      ),
+                    ],
                   ),
-                );
+                ),
+              );
+            }
+
+            // ===================================================
+            // HITUNG DATA
+            // ===================================================
+
+            final List<_Discrepancy>
+                discrepancies = [];
+
+            int completedPart = 0;
+            int totalPart = 0;
+
+            for (final caseModel
+                in edn.cases) {
+              totalPart +=
+                  caseModel.parts.length;
+
+              for (final part
+                  in caseModel.parts) {
+                if (part.scannedQty ==
+                    part.targetQty) {
+                  completedPart++;
+                }
+
+                final difference =
+                    part.scannedQty -
+                        part.targetQty;
+
+                if (difference != 0) {
+                  discrepancies.add(
+                    _Discrepancy(
+                      caseNo:
+                          caseModel.caseNo,
+                      partNo:
+                          part.partNo,
+                      targetQty:
+                          part.targetQty,
+                      scannedQty:
+                          part.scannedQty,
+                      difference:
+                          difference,
+                    ),
+                  );
+                }
               }
             }
-          }
 
-          final bool isComplete =
-              discrepancies.isEmpty &&
-              edn.completedCase ==
-                  edn.totalCase;
+            final bool isComplete =
+                discrepancies.isEmpty &&
+                edn.completedCase ==
+                    edn.totalCase;
 
-          return SingleChildScrollView(
-            padding: const EdgeInsets.all(16),
+            return SingleChildScrollView(
+              physics:
+                  const AlwaysScrollableScrollPhysics(),
 
-            child: Column(
-              crossAxisAlignment:
-                  CrossAxisAlignment.start,
+              padding:
+                  const EdgeInsets.all(16),
 
-              children: [
+              child: Column(
+                crossAxisAlignment:
+                    CrossAxisAlignment.start,
 
-                // =================================================
-                // JUDUL
-                // =================================================
+                children: [
 
-                const _ReportTitle(),
+                  // =================================================
+                  // JUDUL
+                  // =================================================
 
-                const SizedBox(height: 16),
+                  const _ReportTitle(),
 
-                // =================================================
-                // EDN INFO
-                // =================================================
+                  const SizedBox(
+                    height: 16,
+                  ),
 
-                _EdnInfoCard(
-                  fileName: edn.fileName,
-                ),
+                  // =================================================
+                  // EDN INFO
+                  // =================================================
 
-                const SizedBox(height: 16),
+                  _EdnInfoCard(
+                    fileName:
+                        edn.fileName,
 
-                // =================================================
-                // PERNYATAAN
-                // =================================================
+                    dealerName:
+                        _dealerName,
 
-                const _StatementCard(),
+                    dealerCode:
+                        _dealerCode,
 
-                const SizedBox(height: 16),
+                    dealerAddress:
+                        _dealerAddress,
+                  ),
 
-                // =================================================
-                // HASIL
-                // =================================================
+                  const SizedBox(
+                    height: 16,
+                  ),
 
-                _ResultCard(
-                  isComplete: isComplete,
-                ),
+                  // =================================================
+                  // PERNYATAAN
+                  // =================================================
 
-                const SizedBox(height: 16),
+                  const _StatementCard(),
 
-                // =================================================
-                // SUMMARY
-                // =================================================
+                  const SizedBox(
+                    height: 16,
+                  ),
 
-                _SummaryCard(
-                  totalCase: edn.totalCase,
-                  completedCase:
-                      edn.completedCase,
+                  // =================================================
+                  // HASIL
+                  // =================================================
 
-                  totalPart: totalPart,
-                  completedPart:
-                      completedPart,
+                  _ResultCard(
+                    isComplete:
+                        isComplete,
+                  ),
 
-                  totalQty: edn.totalTarget,
-                  scannedQty:
-                      edn.totalScanned,
+                  const SizedBox(
+                    height: 16,
+                  ),
 
-                  discrepancies:
-                      discrepancies.length,
-                ),
+                  // =================================================
+                  // SUMMARY
+                  // =================================================
 
-                // =================================================
-                // KETIDAKSESUAIAN
-                // =================================================
+                  _SummaryCard(
+                    totalCase:
+                        edn.totalCase,
 
-                if (discrepancies.isNotEmpty) ...[
-                  const SizedBox(height: 16),
+                    completedCase:
+                        edn.completedCase,
 
-                  _DiscrepancyCard(
+                    totalPart:
+                        totalPart,
+
+                    completedPart:
+                        completedPart,
+
+                    totalQty:
+                        edn.totalTarget,
+
+                    scannedQty:
+                        edn.totalScanned,
+
                     discrepancies:
-                        discrepancies,
+                        discrepancies.length,
                   ),
-                ],
 
-                const SizedBox(height: 24),
+                  // =================================================
+                  // KETIDAKSESUAIAN
+                  // =================================================
 
-                // =================================================
-                // DETAIL
-                // =================================================
+                  if (discrepancies
+                      .isNotEmpty) ...[
+                    const SizedBox(
+                      height: 16,
+                    ),
 
-                const Text(
-                  'DETAIL PENGECEKAN',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight:
-                        FontWeight.bold,
+                    _DiscrepancyCard(
+                      discrepancies:
+                          discrepancies,
+                    ),
+                  ],
+
+                  const SizedBox(
+                    height: 24,
                   ),
-                ),
 
-                const SizedBox(height: 10),
+                  // =================================================
+                  // DETAIL
+                  // =================================================
 
-                ...edn.cases.map(
-                  (caseModel) {
-                    return _CaseReportCard(
-                      caseModel: caseModel,
-                    );
-                  },
-                ),
+                  const Text(
+                    'DETAIL PENGECEKAN',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight:
+                          FontWeight.bold,
+                    ),
+                  ),
 
-                const SizedBox(height: 24),
+                  const SizedBox(
+                    height: 10,
+                  ),
 
-                // =================================================
-                // EXPORT PDF
-                // =================================================
-
-                SizedBox(
-                  width: double.infinity,
-
-                  child: ElevatedButton.icon(
-                    onPressed: () async {
-                      await _exportPdf(
-                        context: context,
-                        edn: edn,
-                        completedPart:
-                            completedPart,
-                        totalPart:
-                            totalPart,
-                        discrepancies:
-                            discrepancies,
-                        isComplete:
-                            isComplete,
+                  ...edn.cases.map(
+                    (caseModel) {
+                      return _CaseReportCard(
+                        caseModel:
+                            caseModel,
                       );
                     },
-
-                    icon: const Icon(
-                      Icons.picture_as_pdf,
-                    ),
-
-                    label: const Text(
-                      'EXPORT PDF',
-                    ),
-
-                    style:
-                        ElevatedButton.styleFrom(
-                      padding:
-                          const EdgeInsets.symmetric(
-                        vertical: 15,
-                      ),
-                    ),
                   ),
-                ),
 
-                const SizedBox(height: 20),
-              ],
+                  const SizedBox(
+                    height: 20,
+                  ),
+                ],
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+  // =============================================================
+  // HANDLE EXPORT PDF
+  // =============================================================
+
+  Future<void> _handleExportPdf(
+    BuildContext context,
+    ScannerProvider provider,
+  ) async {
+    final edn =
+        provider.currentEdn;
+
+    if (edn == null) {
+      return;
+    }
+
+    // ===========================================================
+    // HITUNG DATA
+    // ===========================================================
+
+    final List<_Discrepancy>
+        discrepancies = [];
+
+    int completedPart = 0;
+    int totalPart = 0;
+
+    for (final caseModel
+        in edn.cases) {
+      totalPart +=
+          caseModel.parts.length;
+
+      for (final part
+          in caseModel.parts) {
+        if (part.scannedQty ==
+            part.targetQty) {
+          completedPart++;
+        }
+
+        final difference =
+            part.scannedQty -
+                part.targetQty;
+
+        if (difference != 0) {
+          discrepancies.add(
+            _Discrepancy(
+              caseNo:
+                  caseModel.caseNo,
+              partNo:
+                  part.partNo,
+              targetQty:
+                  part.targetQty,
+              scannedQty:
+                  part.scannedQty,
+              difference:
+                  difference,
             ),
           );
-        },
-      ),
+        }
+      }
+    }
+
+    final bool isComplete =
+        discrepancies.isEmpty &&
+        edn.completedCase ==
+            edn.totalCase;
+
+    await _exportPdf(
+      context: context,
+      edn: edn,
+      completedPart:
+          completedPart,
+      totalPart:
+          totalPart,
+      discrepancies:
+          discrepancies,
+      isComplete:
+          isComplete,
+      dealerName:
+          _dealerName,
+      dealerCode:
+          _dealerCode,
+      dealerAddress:
+          _dealerAddress,
     );
   }
 
@@ -278,6 +524,9 @@ class ReportScreen extends StatelessWidget {
     required List<_Discrepancy>
         discrepancies,
     required bool isComplete,
+    required String dealerName,
+    required String dealerCode,
+    required String dealerAddress,
   }) async {
     try {
       final pdf =
@@ -305,7 +554,9 @@ class ReportScreen extends StatelessWidget {
               PdfPageFormat.a4,
 
           margin:
-              const pw.EdgeInsets.all(36),
+              const pw.EdgeInsets.all(
+            36,
+          ),
 
           footer: (context) {
             return pw.Align(
@@ -314,7 +565,8 @@ class ReportScreen extends StatelessWidget {
 
               child: pw.Text(
                 'Halaman ${context.pageNumber}',
-                style: const pw.TextStyle(
+                style:
+                    const pw.TextStyle(
                   fontSize: 9,
                 ),
               ),
@@ -336,7 +588,8 @@ class ReportScreen extends StatelessWidget {
                   textAlign:
                       pw.TextAlign.center,
 
-                  style: pw.TextStyle(
+                  style:
+                      pw.TextStyle(
                     fontSize: 16,
                     fontWeight:
                         pw.FontWeight.bold,
@@ -344,7 +597,9 @@ class ReportScreen extends StatelessWidget {
                 ),
               ),
 
-              pw.SizedBox(height: 16),
+              pw.SizedBox(
+                height: 16,
+              ),
 
               // -------------------------------------------------
               // DEALER / EDN
@@ -355,7 +610,9 @@ class ReportScreen extends StatelessWidget {
                     double.infinity,
 
                 padding:
-                    const pw.EdgeInsets.all(12),
+                    const pw.EdgeInsets.all(
+                  12,
+                ),
 
                 decoration:
                     pw.BoxDecoration(
@@ -368,19 +625,43 @@ class ReportScreen extends StatelessWidget {
 
                 child: pw.Column(
                   crossAxisAlignment:
-                      pw.CrossAxisAlignment.start,
+                      pw.CrossAxisAlignment
+                          .start,
 
                   children: [
 
                     pw.Text(
-                      'NASMOCO BENGAWAN MOTOR SLAMET RIYADI',
+                      dealerName.isEmpty
+                          ? 'NAMA DEALER BELUM DIATUR'
+                          : dealerName,
 
-                      style: pw.TextStyle(
+                      style:
+                          pw.TextStyle(
                         fontWeight:
                             pw.FontWeight.bold,
                         fontSize: 11,
                       ),
                     ),
+
+                    if (dealerCode
+                        .isNotEmpty)
+                      pw.Text(
+                        'Kode Dealer : $dealerCode',
+                        style:
+                            const pw.TextStyle(
+                          fontSize: 9,
+                        ),
+                      ),
+
+                    if (dealerAddress
+                        .isNotEmpty)
+                      pw.Text(
+                        dealerAddress,
+                        style:
+                            const pw.TextStyle(
+                          fontSize: 9,
+                        ),
+                      ),
 
                     pw.SizedBox(
                       height: 6,
@@ -401,7 +682,9 @@ class ReportScreen extends StatelessWidget {
                 ),
               ),
 
-              pw.SizedBox(height: 16),
+              pw.SizedBox(
+                height: 16,
+              ),
 
               // -------------------------------------------------
               // STATEMENT
@@ -414,13 +697,16 @@ class ReportScreen extends StatelessWidget {
                 'penerimaan barang kiriman dari ekspedisi '
                 'berdasarkan EDN yang diterima.',
 
-                style: const pw.TextStyle(
+                style:
+                    const pw.TextStyle(
                   fontSize: 10,
                   lineSpacing: 4,
                 ),
               ),
 
-              pw.SizedBox(height: 18),
+              pw.SizedBox(
+                height: 18,
+              ),
 
               // -------------------------------------------------
               // RESULT
@@ -431,7 +717,9 @@ class ReportScreen extends StatelessWidget {
                     double.infinity,
 
                 padding:
-                    const pw.EdgeInsets.all(14),
+                    const pw.EdgeInsets.all(
+                  14,
+                ),
 
                 decoration:
                     pw.BoxDecoration(
@@ -444,6 +732,7 @@ class ReportScreen extends StatelessWidget {
                     color: isComplete
                         ? PdfColors.green
                         : PdfColors.red,
+
                     width: 1.5,
                   ),
                 ),
@@ -454,7 +743,8 @@ class ReportScreen extends StatelessWidget {
                     pw.Text(
                       'HASIL PENGECEKAN',
 
-                      style: pw.TextStyle(
+                      style:
+                          pw.TextStyle(
                         fontWeight:
                             pw.FontWeight.bold,
 
@@ -476,7 +766,8 @@ class ReportScreen extends StatelessWidget {
                       textAlign:
                           pw.TextAlign.center,
 
-                      style: pw.TextStyle(
+                      style:
+                          pw.TextStyle(
                         fontWeight:
                             pw.FontWeight.bold,
                         fontSize: 13,
@@ -486,12 +777,14 @@ class ReportScreen extends StatelessWidget {
                     if (!isComplete)
                       pw.Padding(
                         padding:
-                            const pw.EdgeInsets.only(
+                            const pw.EdgeInsets
+                                .only(
                           top: 4,
                         ),
 
                         child: pw.Text(
                           '(Lihat detail pengecekan)',
+
                           style:
                               const pw.TextStyle(
                             fontSize: 9,
@@ -502,7 +795,9 @@ class ReportScreen extends StatelessWidget {
                 ),
               ),
 
-              pw.SizedBox(height: 18),
+              pw.SizedBox(
+                height: 18,
+              ),
 
               // -------------------------------------------------
               // SUMMARY
@@ -511,14 +806,17 @@ class ReportScreen extends StatelessWidget {
               pw.Text(
                 'SUMMARY',
 
-                style: pw.TextStyle(
+                style:
+                    pw.TextStyle(
                   fontSize: 13,
                   fontWeight:
                       pw.FontWeight.bold,
                 ),
               ),
 
-              pw.SizedBox(height: 8),
+              pw.SizedBox(
+                height: 8,
+              ),
 
               pw.Table(
                 border:
@@ -529,9 +827,13 @@ class ReportScreen extends StatelessWidget {
 
                 columnWidths: {
                   0:
-                      const pw.FlexColumnWidth(2),
+                      const pw.FlexColumnWidth(
+                    2,
+                  ),
                   1:
-                      const pw.FlexColumnWidth(1),
+                      const pw.FlexColumnWidth(
+                    1,
+                  ),
                 },
 
                 children: [
@@ -574,34 +876,42 @@ class ReportScreen extends StatelessWidget {
               // DISCREPANCY
               // -------------------------------------------------
 
-              if (discrepancies.isNotEmpty) ...[
-                pw.SizedBox(height: 18),
+              if (discrepancies
+                  .isNotEmpty) ...[
+                pw.SizedBox(
+                  height: 18,
+                ),
 
                 pw.Text(
                   'KETIDAKSESUAIAN',
 
-                  style: pw.TextStyle(
+                  style:
+                      pw.TextStyle(
                     fontSize: 13,
                     fontWeight:
                         pw.FontWeight.bold,
-
                     color:
                         PdfColors.red,
                   ),
                 ),
 
-                pw.SizedBox(height: 8),
+                pw.SizedBox(
+                  height: 8,
+                ),
 
                 ...discrepancies.map(
                   (item) {
                     return pw.Container(
                       margin:
-                          const pw.EdgeInsets.only(
+                          const pw.EdgeInsets
+                              .only(
                         bottom: 8,
                       ),
 
                       padding:
-                          const pw.EdgeInsets.all(8),
+                          const pw.EdgeInsets.all(
+                        8,
+                      ),
 
                       decoration:
                           pw.BoxDecoration(
@@ -614,14 +924,16 @@ class ReportScreen extends StatelessWidget {
 
                       child: pw.Column(
                         crossAxisAlignment:
-                            pw.CrossAxisAlignment.start,
+                            pw.CrossAxisAlignment
+                                .start,
 
                         children: [
 
                           pw.Text(
                             'CASE : ${item.caseNo}',
 
-                            style: pw.TextStyle(
+                            style:
+                                pw.TextStyle(
                               fontWeight:
                                   pw.FontWeight.bold,
                             ),
@@ -640,7 +952,9 @@ class ReportScreen extends StatelessWidget {
                           ),
 
                           pw.Text(
-                            'Selisih : ${item.difference}',
+                            'Selisih : '
+                            '${item.difference > 0 ? '+' : ''}'
+                            '${item.difference}',
                           ),
                         ],
                       ),
@@ -663,7 +977,9 @@ class ReportScreen extends StatelessWidget {
               PdfPageFormat.a4,
 
           margin:
-              const pw.EdgeInsets.all(30),
+              const pw.EdgeInsets.all(
+            30,
+          ),
 
           footer: (context) {
             return pw.Align(
@@ -672,7 +988,8 @@ class ReportScreen extends StatelessWidget {
 
               child: pw.Text(
                 'Halaman ${context.pageNumber}',
-                style: const pw.TextStyle(
+                style:
+                    const pw.TextStyle(
                   fontSize: 9,
                 ),
               ),
@@ -687,7 +1004,8 @@ class ReportScreen extends StatelessWidget {
               pw.Text(
                 'LAMPIRAN DATA HASIL PENGECEKAN',
 
-                style: pw.TextStyle(
+                style:
+                    pw.TextStyle(
                   fontSize: 15,
                   fontWeight:
                       pw.FontWeight.bold,
@@ -696,22 +1014,25 @@ class ReportScreen extends StatelessWidget {
             );
 
             widgets.add(
-              pw.SizedBox(height: 12),
+              pw.SizedBox(
+                height: 12,
+              ),
             );
 
             for (final caseModel
                 in edn.cases) {
-
               widgets.add(
                 pw.Container(
                   margin:
-                      const pw.EdgeInsets.only(
+                      const pw.EdgeInsets
+                          .only(
                     bottom: 14,
                   ),
 
                   child: pw.Column(
                     crossAxisAlignment:
-                        pw.CrossAxisAlignment.start,
+                        pw.CrossAxisAlignment
+                            .start,
 
                     children: [
 
@@ -724,7 +1045,8 @@ class ReportScreen extends StatelessWidget {
                             double.infinity,
 
                         padding:
-                            const pw.EdgeInsets.all(
+                            const pw.EdgeInsets
+                                .all(
                           8,
                         ),
 
@@ -767,15 +1089,25 @@ class ReportScreen extends StatelessWidget {
 
                         columnWidths: {
                           0:
-                              const pw.FlexColumnWidth(3),
+                              const pw.FlexColumnWidth(
+                            3,
+                          ),
                           1:
-                              const pw.FlexColumnWidth(1),
+                              const pw.FlexColumnWidth(
+                            1,
+                          ),
                           2:
-                              const pw.FlexColumnWidth(1),
+                              const pw.FlexColumnWidth(
+                            1,
+                          ),
                           3:
-                              const pw.FlexColumnWidth(1),
+                              const pw.FlexColumnWidth(
+                            1,
+                          ),
                           4:
-                              const pw.FlexColumnWidth(1.5),
+                              const pw.FlexColumnWidth(
+                            1.5,
+                          ),
                         },
 
                         children: [
@@ -818,10 +1150,9 @@ class ReportScreen extends StatelessWidget {
 
                           ...caseModel.parts.map(
                             (part) {
-
                               final difference =
                                   part.scannedQty -
-                                  part.targetQty;
+                                      part.targetQty;
 
                               final match =
                                   difference == 0;
@@ -879,7 +1210,6 @@ class ReportScreen extends StatelessWidget {
         filename:
             'Report_${_safeFileName(edn.fileName)}.pdf',
       );
-
     } catch (e) {
       if (context.mounted) {
         ScaffoldMessenger.of(
@@ -930,12 +1260,15 @@ class ReportScreen extends StatelessWidget {
   }) {
     return pw.Padding(
       padding:
-          const pw.EdgeInsets.all(6),
+          const pw.EdgeInsets.all(
+        6,
+      ),
 
       child: pw.Text(
         text,
 
-        style: pw.TextStyle(
+        style:
+            pw.TextStyle(
           fontSize: 8,
 
           fontWeight: bold
@@ -973,18 +1306,23 @@ class ReportScreen extends StatelessWidget {
 // REPORT TITLE
 // =================================================================
 
-class _ReportTitle extends StatelessWidget {
+class _ReportTitle
+    extends StatelessWidget {
   const _ReportTitle();
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(
+    BuildContext context,
+  ) {
     return const Text(
       'BERITA ACARA PENERIMAAN BARANG\n'
       'KIRIMAN DARI EKSPEDISI',
 
-      textAlign: TextAlign.center,
+      textAlign:
+          TextAlign.center,
 
-      style: TextStyle(
+      style:
+          TextStyle(
         fontSize: 20,
         fontWeight:
             FontWeight.bold,
@@ -997,21 +1335,33 @@ class _ReportTitle extends StatelessWidget {
 // EDN INFO
 // =================================================================
 
-class _EdnInfoCard extends StatelessWidget {
+class _EdnInfoCard
+    extends StatelessWidget {
   final String fileName;
+
+  final String dealerName;
+  final String dealerCode;
+  final String dealerAddress;
 
   const _EdnInfoCard({
     required this.fileName,
+    required this.dealerName,
+    required this.dealerCode,
+    required this.dealerAddress,
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(
+    BuildContext context,
+  ) {
     return Card(
       elevation: 1,
 
       child: Padding(
         padding:
-            const EdgeInsets.all(16),
+            const EdgeInsets.all(
+          16,
+        ),
 
         child: Column(
           crossAxisAlignment:
@@ -1019,33 +1369,79 @@ class _EdnInfoCard extends StatelessWidget {
 
           children: [
 
-            const Text(
-              'NASMOCO BENGAWAN MOTOR SLAMET RIYADI',
+            Text(
+              dealerName.isEmpty
+                  ? 'NAMA DEALER BELUM DIATUR'
+                  : dealerName,
 
-              style: TextStyle(
+              style:
+                  const TextStyle(
                 fontSize: 15,
                 fontWeight:
                     FontWeight.bold,
               ),
             ),
 
-            const SizedBox(height: 10),
+            if (dealerCode
+                .isNotEmpty) ...[
+              const SizedBox(
+                height: 4,
+              ),
+
+              Text(
+                'Kode Dealer : $dealerCode',
+
+                style:
+                    const TextStyle(
+                  fontSize: 12,
+                  color:
+                      Colors.grey,
+                ),
+              ),
+            ],
+
+            if (dealerAddress
+                .isNotEmpty) ...[
+              const SizedBox(
+                height: 4,
+              ),
+
+              Text(
+                dealerAddress,
+
+                style:
+                    const TextStyle(
+                  fontSize: 12,
+                  color:
+                      Colors.grey,
+                ),
+              ),
+            ],
+
+            const SizedBox(
+              height: 10,
+            ),
 
             const Text(
               'EDN',
 
-              style: TextStyle(
+              style:
+                  TextStyle(
                 fontSize: 12,
-                color: Colors.grey,
+                color:
+                    Colors.grey,
               ),
             ),
 
-            const SizedBox(height: 3),
+            const SizedBox(
+              height: 3,
+            ),
 
             Text(
               fileName,
 
-              style: const TextStyle(
+              style:
+                  const TextStyle(
                 fontSize: 15,
                 fontWeight:
                     FontWeight.w600,
@@ -1062,11 +1458,14 @@ class _EdnInfoCard extends StatelessWidget {
 // STATEMENT
 // =================================================================
 
-class _StatementCard extends StatelessWidget {
+class _StatementCard
+    extends StatelessWidget {
   const _StatementCard();
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(
+    BuildContext context,
+  ) {
     final now =
         DateTime.now();
 
@@ -1084,7 +1483,9 @@ class _StatementCard extends StatelessWidget {
 
       child: Padding(
         padding:
-            const EdgeInsets.all(16),
+            const EdgeInsets.all(
+          16,
+        ),
 
         child: Text(
           'Diterangkan bahwa pada tanggal '
@@ -1093,7 +1494,8 @@ class _StatementCard extends StatelessWidget {
           'penerimaan barang kiriman dari ekspedisi '
           'berdasarkan EDN yang diterima.',
 
-          style: const TextStyle(
+          style:
+              const TextStyle(
             fontSize: 14,
             height: 1.5,
           ),
@@ -1107,7 +1509,8 @@ class _StatementCard extends StatelessWidget {
 // RESULT
 // =================================================================
 
-class _ResultCard extends StatelessWidget {
+class _ResultCard
+    extends StatelessWidget {
   final bool isComplete;
 
   const _ResultCard({
@@ -1115,22 +1518,31 @@ class _ResultCard extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(
+    BuildContext context,
+  ) {
     return Container(
-      width: double.infinity,
+      width:
+          double.infinity,
 
       padding:
-          const EdgeInsets.all(18),
+          const EdgeInsets.all(
+        18,
+      ),
 
-      decoration: BoxDecoration(
+      decoration:
+          BoxDecoration(
         color: isComplete
             ? Colors.green.shade50
             : Colors.red.shade50,
 
         borderRadius:
-            BorderRadius.circular(10),
+            BorderRadius.circular(
+          10,
+        ),
 
-        border: Border.all(
+        border:
+            Border.all(
           color: isComplete
               ? Colors.green
               : Colors.red,
@@ -1152,12 +1564,15 @@ class _ResultCard extends StatelessWidget {
             size: 38,
           ),
 
-          const SizedBox(height: 8),
+          const SizedBox(
+            height: 8,
+          ),
 
           Text(
             'HASIL PENGECEKAN',
 
-            style: TextStyle(
+            style:
+                TextStyle(
               fontWeight:
                   FontWeight.bold,
 
@@ -1167,7 +1582,9 @@ class _ResultCard extends StatelessWidget {
             ),
           ),
 
-          const SizedBox(height: 6),
+          const SizedBox(
+            height: 6,
+          ),
 
           Text(
             isComplete
@@ -1177,7 +1594,8 @@ class _ResultCard extends StatelessWidget {
             textAlign:
                 TextAlign.center,
 
-            style: const TextStyle(
+            style:
+                const TextStyle(
               fontSize: 17,
               fontWeight:
                   FontWeight.bold,
@@ -1193,7 +1611,8 @@ class _ResultCard extends StatelessWidget {
 // SUMMARY
 // =================================================================
 
-class _SummaryCard extends StatelessWidget {
+class _SummaryCard
+    extends StatelessWidget {
   final int totalCase;
   final int completedCase;
 
@@ -1216,7 +1635,9 @@ class _SummaryCard extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(
+    BuildContext context,
+  ) {
     final difference =
         scannedQty - totalQty;
 
@@ -1225,7 +1646,9 @@ class _SummaryCard extends StatelessWidget {
 
       child: Padding(
         padding:
-            const EdgeInsets.all(16),
+            const EdgeInsets.all(
+          16,
+        ),
 
         child: Column(
           crossAxisAlignment:
@@ -1236,35 +1659,42 @@ class _SummaryCard extends StatelessWidget {
             const Text(
               'SUMMARY',
 
-              style: TextStyle(
+              style:
+                  TextStyle(
                 fontSize: 18,
                 fontWeight:
                     FontWeight.bold,
               ),
             ),
 
-            const SizedBox(height: 16),
+            const SizedBox(
+              height: 16,
+            ),
 
             _SummaryRow(
-              label: 'Total Case',
+              label:
+                  'Total Case',
               value:
                   '$completedCase / $totalCase',
             ),
 
             _SummaryRow(
-              label: 'Total PNO',
+              label:
+                  'Total PNO',
               value:
                   '$completedPart / $totalPart',
             ),
 
             _SummaryRow(
-              label: 'Total Qty',
+              label:
+                  'Total Qty',
               value:
                   '$scannedQty / $totalQty',
             ),
 
             _SummaryRow(
-              label: 'Selisih Qty',
+              label:
+                  'Selisih Qty',
               value:
                   '${difference > 0 ? '+' : ''}$difference',
               valueColor:
@@ -1274,7 +1704,8 @@ class _SummaryCard extends StatelessWidget {
             ),
 
             _SummaryRow(
-              label: 'Ketidaksesuaian',
+              label:
+                  'Ketidaksesuaian',
               value:
                   '$discrepancies item',
               valueColor:
@@ -1288,7 +1719,8 @@ class _SummaryCard extends StatelessWidget {
             ),
 
             _SummaryRow(
-              label: 'Status',
+              label:
+                  'Status',
               value:
                   discrepancies == 0
                       ? 'SESUAI'
@@ -1309,7 +1741,8 @@ class _SummaryCard extends StatelessWidget {
 // SUMMARY ROW
 // =================================================================
 
-class _SummaryRow extends StatelessWidget {
+class _SummaryRow
+    extends StatelessWidget {
   final String label;
   final String value;
   final Color? valueColor;
@@ -1321,7 +1754,9 @@ class _SummaryRow extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(
+    BuildContext context,
+  ) {
     return Padding(
       padding:
           const EdgeInsets.symmetric(
@@ -1335,8 +1770,10 @@ class _SummaryRow extends StatelessWidget {
             child: Text(
               label,
 
-              style: const TextStyle(
-                color: Colors.grey,
+              style:
+                  const TextStyle(
+                color:
+                    Colors.grey,
               ),
             ),
           ),
@@ -1344,10 +1781,12 @@ class _SummaryRow extends StatelessWidget {
           Text(
             value,
 
-            style: TextStyle(
+            style:
+                TextStyle(
               fontWeight:
                   FontWeight.bold,
-              color: valueColor,
+              color:
+                  valueColor,
             ),
           ),
         ],
@@ -1362,7 +1801,6 @@ class _SummaryRow extends StatelessWidget {
 
 class _DiscrepancyCard
     extends StatelessWidget {
-
   final List<_Discrepancy>
       discrepancies;
 
@@ -1371,15 +1809,20 @@ class _DiscrepancyCard
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(
+    BuildContext context,
+  ) {
     return Card(
       elevation: 2,
 
-      color: Colors.red.shade50,
+      color:
+          Colors.red.shade50,
 
       child: Padding(
         padding:
-            const EdgeInsets.all(16),
+            const EdgeInsets.all(
+          16,
+        ),
 
         child: Column(
           crossAxisAlignment:
@@ -1391,45 +1834,54 @@ class _DiscrepancyCard
               children: [
 
                 const Icon(
-                  Icons.warning_amber_rounded,
-                  color: Colors.red,
+                  Icons
+                      .warning_amber_rounded,
+                  color:
+                      Colors.red,
                 ),
 
-                const SizedBox(width: 8),
+                const SizedBox(
+                  width: 8,
+                ),
 
                 const Expanded(
                   child: Text(
                     'KETIDAKSESUAIAN',
 
-                    style: TextStyle(
+                    style:
+                        TextStyle(
                       fontSize: 17,
                       fontWeight:
                           FontWeight.bold,
-                      color: Colors.red,
+                      color:
+                          Colors.red,
                     ),
                   ),
                 ),
               ],
             ),
 
-            const SizedBox(height: 12),
+            const SizedBox(
+              height: 12,
+            ),
 
             ...List.generate(
               discrepancies.length,
-
               (index) {
                 final item =
                     discrepancies[index];
 
                 return Padding(
                   padding:
-                      const EdgeInsets.only(
+                      const EdgeInsets
+                          .only(
                     bottom: 14,
                   ),
 
                   child: Column(
                     crossAxisAlignment:
-                        CrossAxisAlignment.start,
+                        CrossAxisAlignment
+                            .start,
 
                     children: [
 
@@ -1443,7 +1895,9 @@ class _DiscrepancyCard
                         ),
                       ),
 
-                      const SizedBox(height: 3),
+                      const SizedBox(
+                        height: 3,
+                      ),
 
                       Text(
                         '   PNO  : ${item.partNo}',
@@ -1466,7 +1920,8 @@ class _DiscrepancyCard
                             const TextStyle(
                           fontWeight:
                               FontWeight.bold,
-                          color: Colors.red,
+                          color:
+                              Colors.red,
                         ),
                       ),
                     ],
@@ -1479,9 +1934,11 @@ class _DiscrepancyCard
               'Detail lengkap dapat dilihat pada '
               'bagian Detail Pengecekan.',
 
-              style: TextStyle(
+              style:
+                  TextStyle(
                 fontSize: 12,
-                color: Colors.grey,
+                color:
+                    Colors.grey,
               ),
             ),
           ],
@@ -1497,7 +1954,6 @@ class _DiscrepancyCard
 
 class _CaseReportCard
     extends StatelessWidget {
-
   final CaseModel caseModel;
 
   const _CaseReportCard({
@@ -1505,7 +1961,9 @@ class _CaseReportCard
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(
+    BuildContext context,
+  ) {
     return Card(
       margin:
           const EdgeInsets.only(
@@ -1518,7 +1976,8 @@ class _CaseReportCard
         leading: Icon(
           caseModel.isComplete
               ? Icons.check_circle
-              : Icons.warning_amber_rounded,
+              : Icons
+                  .warning_amber_rounded,
 
           color:
               caseModel.isComplete
@@ -1529,7 +1988,8 @@ class _CaseReportCard
         title: Text(
           caseModel.caseNo,
 
-          style: const TextStyle(
+          style:
+              const TextStyle(
             fontWeight:
                 FontWeight.bold,
           ),
@@ -1574,7 +2034,6 @@ class _CaseReportCard
 
 class _PartReportRow
     extends StatelessWidget {
-
   final PartModel part;
 
   const _PartReportRow({
@@ -1582,10 +2041,12 @@ class _PartReportRow
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(
+    BuildContext context,
+  ) {
     final difference =
         part.scannedQty -
-        part.targetQty;
+            part.targetQty;
 
     final bool match =
         difference == 0;
@@ -1596,9 +2057,12 @@ class _PartReportRow
         vertical: 10,
       ),
 
-      decoration: BoxDecoration(
-        border: Border(
-          bottom: BorderSide(
+      decoration:
+          BoxDecoration(
+        border:
+            Border(
+          bottom:
+              BorderSide(
             color:
                 Colors.grey.shade200,
           ),
@@ -1611,23 +2075,26 @@ class _PartReportRow
           Icon(
             match
                 ? Icons.check_circle
-                : Icons.warning_amber_rounded,
+                : Icons
+                    .warning_amber_rounded,
 
             size: 20,
 
-            color:
-                match
-                    ? Colors.green
-                    : Colors.red,
+            color: match
+                ? Colors.green
+                : Colors.red,
           ),
 
-          const SizedBox(width: 10),
+          const SizedBox(
+            width: 10,
+          ),
 
           Expanded(
             child: Text(
               part.partNo,
 
-              style: const TextStyle(
+              style:
+                  const TextStyle(
                 fontWeight:
                     FontWeight.w600,
               ),
@@ -1644,7 +2111,8 @@ class _PartReportRow
                 '${part.scannedQty} / '
                 '${part.targetQty}',
 
-                style: const TextStyle(
+                style:
+                    const TextStyle(
                   fontWeight:
                       FontWeight.bold,
                 ),
@@ -1659,7 +2127,8 @@ class _PartReportRow
                   style:
                       const TextStyle(
                     fontSize: 11,
-                    color: Colors.red,
+                    color:
+                        Colors.red,
                   ),
                 ),
             ],

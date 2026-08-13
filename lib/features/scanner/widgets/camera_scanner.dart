@@ -21,22 +21,41 @@ class CameraScanner extends StatefulWidget {
 class _CameraScannerState extends State<CameraScanner> {
   late final MobileScannerController _scannerController;
 
-  bool _scanLocked = false;
   Timer? _scanCooldown;
 
-  // Ukuran area scan.
+  bool _scanProcessing = false;
+
+  // ---------------------------------
+  // UKURAN AREA SCAN
+  // ---------------------------------
+
   static const double _scanWidth = 280;
   static const double _scanHeight = 130;
+
+  // ---------------------------------
+  // INTERVAL CONTINUOUS SCAN
+  // ---------------------------------
+
+  static const Duration _scanInterval =
+      Duration(milliseconds: 400);
+
+  // ---------------------------------
+  // INIT
+  // ---------------------------------
 
   @override
   void initState() {
     super.initState();
 
     _scannerController = MobileScannerController(
-      detectionSpeed: DetectionSpeed.noDuplicates,
+      detectionSpeed: DetectionSpeed.normal,
       facing: CameraFacing.back,
     );
   }
+
+  // ---------------------------------
+  // DISPOSE
+  // ---------------------------------
 
   @override
   void dispose() {
@@ -46,9 +65,9 @@ class _CameraScannerState extends State<CameraScanner> {
     super.dispose();
   }
 
-  //---------------------------------
+  // ---------------------------------
   // HANDLE BARCODE
-  //---------------------------------
+  // ---------------------------------
 
   void _handleBarcode(String barcode) {
     final value = barcode.trim();
@@ -57,47 +76,53 @@ class _CameraScannerState extends State<CameraScanner> {
       return;
     }
 
-    //---------------------------------
-    // MASIH LOCK
-    //---------------------------------
+    // ---------------------------------
+    // MASIH DALAM INTERVAL
+    // ---------------------------------
 
-    if (_scanLocked) {
+    if (_scanProcessing) {
       return;
     }
 
-    //---------------------------------
-    // LOCK
-    //---------------------------------
+    // ---------------------------------
+    // LOCK SEMENTARA
+    // ---------------------------------
 
-    _scanLocked = true;
+    _scanProcessing = true;
 
-    //---------------------------------
+    // ---------------------------------
     // KIRIM BARCODE
-    //---------------------------------
+    // ---------------------------------
 
     widget.onDetect(value);
 
-    //---------------------------------
-    // COOLDOWN 600ms
-    //---------------------------------
+    // ---------------------------------
+    // SIAP MEMBACA LAGI
+    // ---------------------------------
 
     _scanCooldown?.cancel();
 
     _scanCooldown = Timer(
-      const Duration(milliseconds: 600),
+      _scanInterval,
       () {
         if (!mounted) {
           return;
         }
 
         setState(() {
-          _scanLocked = false;
+          _scanProcessing = false;
         });
       },
     );
 
-    setState(() {});
+    if (mounted) {
+      setState(() {});
+    }
   }
+
+  // ---------------------------------
+  // BUILD
+  // ---------------------------------
 
   @override
   Widget build(BuildContext context) {
@@ -122,9 +147,9 @@ class _CameraScannerState extends State<CameraScanner> {
 
             child: LayoutBuilder(
               builder: (context, constraints) {
-                //---------------------------------
+                // ---------------------------------
                 // POSISI SCAN WINDOW
-                //---------------------------------
+                // ---------------------------------
 
                 final scanLeft =
                     (constraints.maxWidth - _scanWidth) / 2;
@@ -144,14 +169,13 @@ class _CameraScannerState extends State<CameraScanner> {
 
                   children: [
 
-                    //---------------------------------
+                    // ---------------------------------
                     // CAMERA
-                    //---------------------------------
+                    // ---------------------------------
 
                     MobileScanner(
                       controller: _scannerController,
 
-                      // AREA SCAN SEBENARNYA
                       scanWindow: scanWindow,
 
                       onDetect: (capture) {
@@ -170,9 +194,9 @@ class _CameraScannerState extends State<CameraScanner> {
                       },
                     ),
 
-                    //---------------------------------
+                    // ---------------------------------
                     // DARK OVERLAY
-                    //---------------------------------
+                    // ---------------------------------
 
                     Positioned.fill(
                       child: IgnorePointer(
@@ -197,9 +221,9 @@ class _CameraScannerState extends State<CameraScanner> {
                       ),
                     ),
 
-                    //---------------------------------
+                    // ---------------------------------
                     // CASE
-                    //---------------------------------
+                    // ---------------------------------
 
                     Positioned(
                       top: 14,
@@ -239,9 +263,9 @@ class _CameraScannerState extends State<CameraScanner> {
                       ),
                     ),
 
-                    //---------------------------------
+                    // ---------------------------------
                     // SCAN WINDOW VISUAL
-                    //---------------------------------
+                    // ---------------------------------
 
                     Center(
                       child: Container(
@@ -260,25 +284,32 @@ class _CameraScannerState extends State<CameraScanner> {
                       ),
                     ),
 
-                    //---------------------------------
+                    // ---------------------------------
                     // AUTO FULL QTY INDICATOR
-                    //---------------------------------
+                    // ---------------------------------
 
                     if (provider.autoFullQty)
                       Positioned(
-                        top: scanTop + _scanHeight + 12,
+                        top:
+                            scanTop +
+                            _scanHeight +
+                            12,
+
                         left: 0,
                         right: 0,
 
                         child: Center(
                           child: Container(
-                            padding: const EdgeInsets.symmetric(
+                            padding:
+                                const EdgeInsets.symmetric(
                               horizontal: 12,
                               vertical: 6,
                             ),
 
                             decoration: BoxDecoration(
-                              color: Colors.green.withOpacity(0.9),
+                              color:
+                                  Colors.green.withOpacity(0.9),
+
                               borderRadius:
                                   BorderRadius.circular(20),
                             ),
@@ -312,9 +343,9 @@ class _CameraScannerState extends State<CameraScanner> {
                         ),
                       ),
 
-                    //---------------------------------
+                    // ---------------------------------
                     // SCAN INFORMATION
-                    //---------------------------------
+                    // ---------------------------------
 
                     Positioned(
                       bottom: 105,
@@ -322,8 +353,8 @@ class _CameraScannerState extends State<CameraScanner> {
                       right: 20,
 
                       child: Text(
-                        _scanLocked
-                            ? "Tunggu..."
+                        _scanProcessing
+                            ? "Membaca..."
                             : "Arahkan barcode ke dalam kotak",
 
                         textAlign: TextAlign.center,
@@ -340,9 +371,9 @@ class _CameraScannerState extends State<CameraScanner> {
                       ),
                     ),
 
-                    //---------------------------------
+                    // ---------------------------------
                     // LAST PNO + QTY
-                    //---------------------------------
+                    // ---------------------------------
 
                     Positioned(
                       left: 16,
@@ -355,9 +386,9 @@ class _CameraScannerState extends State<CameraScanner> {
 
                         children: [
 
-                          //---------------------------------
+                          // ---------------------------------
                           // PNO
-                          //---------------------------------
+                          // ---------------------------------
 
                           Expanded(
                             child: Column(
@@ -399,9 +430,9 @@ class _CameraScannerState extends State<CameraScanner> {
 
                           const SizedBox(width: 20),
 
-                          //---------------------------------
+                          // ---------------------------------
                           // QTY
-                          //---------------------------------
+                          // ---------------------------------
 
                           Column(
                             crossAxisAlignment:

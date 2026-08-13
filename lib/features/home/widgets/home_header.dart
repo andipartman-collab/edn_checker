@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../settings/settings_screen.dart';
 
 class HomeHeader extends StatelessWidget {
   const HomeHeader({super.key});
@@ -43,9 +44,25 @@ class HomeHeader extends StatelessWidget {
           ),
         ),
 
+        // ---------------------------------
+        // SETTING
+        // ---------------------------------
+
         IconButton(
-          onPressed: () {},
-          icon: const Icon(Icons.settings),
+          tooltip: "Pengaturan",
+
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => const SettingsScreen(),
+              ),
+            );
+          },
+
+          icon: const Icon(
+            Icons.settings,
+          ),
         ),
       ],
     );
