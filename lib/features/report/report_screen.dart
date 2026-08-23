@@ -4,10 +4,10 @@ import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 
+import '../../core/services/local_storage_service.dart';
 import '../../models/case_model.dart';
 import '../../models/part_model.dart';
 import '../../providers/scanner_provider.dart';
-import '../../core/services/local_storage_service.dart';
 
 class ReportScreen extends StatefulWidget {
   const ReportScreen({super.key});
@@ -26,14 +26,11 @@ class _ReportScreenState extends State<ReportScreen> {
       LocalStorageService();
 
   // =============================================================
-  // PROFILE DATA
+  // PROFILE
   // =============================================================
 
-  String _dealerName =
-      'Nama Dealer Belum Diatur';
-
+  String _dealerName = '';
   String _dealerCode = '';
-
   String _dealerAddress = '';
 
   bool _profileLoading = true;
@@ -46,14 +43,14 @@ class _ReportScreenState extends State<ReportScreen> {
   void initState() {
     super.initState();
 
-    _loadProfile();
+    _loadDealerProfile();
   }
 
   // =============================================================
-  // LOAD PROFILE
+  // LOAD DEALER PROFILE
   // =============================================================
 
-  Future<void> _loadProfile() async {
+  Future<void> _loadDealerProfile() async {
     final profile =
         await _storage.loadDealerProfile();
 
@@ -82,14 +79,6 @@ class _ReportScreenState extends State<ReportScreen> {
   }
 
   // =============================================================
-  // REFRESH PROFILE
-  // =============================================================
-
-  Future<void> _refreshProfile() async {
-    await _loadProfile();
-  }
-
-  // =============================================================
   // BUILD
   // =============================================================
 
@@ -107,45 +96,36 @@ class _ReportScreenState extends State<ReportScreen> {
         title: const Text(
           'Report',
           style: TextStyle(
-            fontWeight:
-                FontWeight.bold,
+            fontWeight: FontWeight.bold,
           ),
         ),
 
         centerTitle: true,
 
-        // =======================================================
-        // EXPORT PDF DI POJOK KANAN ATAS
-        // =======================================================
-
         actions: [
           Consumer<ScannerProvider>(
-            builder:
-                (context, provider, child) {
-              final edn =
-                  provider.currentEdn;
-
-              if (edn == null) {
-                return const SizedBox.shrink();
+            builder: (
+              context,
+              provider,
+              child,
+            ) {
+              if (provider.currentEdn == null) {
+                return const SizedBox();
               }
 
               return IconButton(
-                tooltip:
-                    'Export PDF',
+                tooltip: 'Export PDF',
 
                 icon: const Icon(
                   Icons.picture_as_pdf,
                 ),
 
-                onPressed:
-                    _profileLoading
-                        ? null
-                        : () async {
-                            await _handleExportPdf(
-                              context,
-                              provider,
-                            );
-                          },
+                onPressed: () async {
+                  await _handleExportPdf(
+                    context,
+                    provider,
+                  );
+                },
               );
             },
           ),
@@ -156,279 +136,279 @@ class _ReportScreenState extends State<ReportScreen> {
       // BODY
       // =========================================================
 
-      body: RefreshIndicator(
-        onRefresh:
-            _refreshProfile,
+      body: Consumer<ScannerProvider>(
+        builder: (
+          context,
+          provider,
+          child,
+        ) {
+          final edn =
+              provider.currentEdn;
 
-        child:
-            Consumer<ScannerProvider>(
-          builder:
-              (context, provider, child) {
-            final edn =
-                provider.currentEdn;
+          if (edn == null) {
+            return const Center(
+              child: Padding(
+                padding:
+                    EdgeInsets.all(24),
 
-            // ===================================================
-            // BELUM ADA EDN
-            // ===================================================
+                child: Column(
+                  mainAxisAlignment:
+                      MainAxisAlignment.center,
 
-            if (edn == null) {
-              return const Center(
-                child: Padding(
-                  padding:
-                      EdgeInsets.all(24),
-
-                  child: Column(
-                    mainAxisAlignment:
-                        MainAxisAlignment.center,
-
-                    children: [
-                      Icon(
-                        Icons
-                            .description_outlined,
-                        size: 60,
-                        color:
-                            Colors.grey,
-                      ),
-
-                      SizedBox(
-                        height: 16,
-                      ),
-
-                      Text(
-                        'Belum ada EDN',
-                        style:
-                            TextStyle(
-                          fontSize: 20,
-                          fontWeight:
-                              FontWeight.bold,
-                        ),
-                      ),
-
-                      SizedBox(
-                        height: 8,
-                      ),
-
-                      Text(
-                        'Silakan upload EDN terlebih dahulu.',
-                        textAlign:
-                            TextAlign.center,
-                        style:
-                            TextStyle(
-                          color:
-                              Colors.grey,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            }
-
-            // ===================================================
-            // HITUNG DATA
-            // ===================================================
-
-            final List<_Discrepancy>
-                discrepancies = [];
-
-            int completedPart = 0;
-            int totalPart = 0;
-
-            for (final caseModel
-                in edn.cases) {
-              totalPart +=
-                  caseModel.parts.length;
-
-              for (final part
-                  in caseModel.parts) {
-                if (part.scannedQty ==
-                    part.targetQty) {
-                  completedPart++;
-                }
-
-                final difference =
-                    part.scannedQty -
-                        part.targetQty;
-
-                if (difference != 0) {
-                  discrepancies.add(
-                    _Discrepancy(
-                      caseNo:
-                          caseModel.caseNo,
-                      partNo:
-                          part.partNo,
-                      targetQty:
-                          part.targetQty,
-                      scannedQty:
-                          part.scannedQty,
-                      difference:
-                          difference,
-                    ),
-                  );
-                }
-              }
-            }
-
-            final bool isComplete =
-                discrepancies.isEmpty &&
-                edn.completedCase ==
-                    edn.totalCase;
-
-            return SingleChildScrollView(
-              physics:
-                  const AlwaysScrollableScrollPhysics(),
-
-              padding:
-                  const EdgeInsets.all(16),
-
-              child: Column(
-                crossAxisAlignment:
-                    CrossAxisAlignment.start,
-
-                children: [
-
-                  // =================================================
-                  // JUDUL
-                  // =================================================
-
-                  const _ReportTitle(),
-
-                  const SizedBox(
-                    height: 16,
-                  ),
-
-                  // =================================================
-                  // EDN INFO
-                  // =================================================
-
-                  _EdnInfoCard(
-                    fileName:
-                        edn.fileName,
-
-                    dealerName:
-                        _dealerName,
-
-                    dealerCode:
-                        _dealerCode,
-
-                    dealerAddress:
-                        _dealerAddress,
-                  ),
-
-                  const SizedBox(
-                    height: 16,
-                  ),
-
-                  // =================================================
-                  // PERNYATAAN
-                  // =================================================
-
-                  const _StatementCard(),
-
-                  const SizedBox(
-                    height: 16,
-                  ),
-
-                  // =================================================
-                  // HASIL
-                  // =================================================
-
-                  _ResultCard(
-                    isComplete:
-                        isComplete,
-                  ),
-
-                  const SizedBox(
-                    height: 16,
-                  ),
-
-                  // =================================================
-                  // SUMMARY
-                  // =================================================
-
-                  _SummaryCard(
-                    totalCase:
-                        edn.totalCase,
-
-                    completedCase:
-                        edn.completedCase,
-
-                    totalPart:
-                        totalPart,
-
-                    completedPart:
-                        completedPart,
-
-                    totalQty:
-                        edn.totalTarget,
-
-                    scannedQty:
-                        edn.totalScanned,
-
-                    discrepancies:
-                        discrepancies.length,
-                  ),
-
-                  // =================================================
-                  // KETIDAKSESUAIAN
-                  // =================================================
-
-                  if (discrepancies
-                      .isNotEmpty) ...[
-                    const SizedBox(
-                      height: 16,
+                  children: [
+                    Icon(
+                      Icons.description_outlined,
+                      size: 60,
+                      color: Colors.grey,
                     ),
 
-                    _DiscrepancyCard(
-                      discrepancies:
-                          discrepancies,
+                    SizedBox(height: 16),
+
+                    Text(
+                      'Belum ada EDN',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight:
+                            FontWeight.bold,
+                      ),
+                    ),
+
+                    SizedBox(height: 8),
+
+                    Text(
+                      'Silakan upload EDN terlebih dahulu.',
+                      textAlign:
+                          TextAlign.center,
+                      style: TextStyle(
+                        color: Colors.grey,
+                      ),
                     ),
                   ],
-
-                  const SizedBox(
-                    height: 24,
-                  ),
-
-                  // =================================================
-                  // DETAIL
-                  // =================================================
-
-                  const Text(
-                    'DETAIL PENGECEKAN',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight:
-                          FontWeight.bold,
-                    ),
-                  ),
-
-                  const SizedBox(
-                    height: 10,
-                  ),
-
-                  ...edn.cases.map(
-                    (caseModel) {
-                      return _CaseReportCard(
-                        caseModel:
-                            caseModel,
-                      );
-                    },
-                  ),
-
-                  const SizedBox(
-                    height: 20,
-                  ),
-                ],
+                ),
               ),
             );
-          },
-        ),
+          }
+
+          // =====================================================
+          // HITUNG DATA
+          // =====================================================
+
+          final List<_Discrepancy>
+              discrepancies = [];
+
+          int completedPart = 0;
+          int totalPart = 0;
+
+          for (final caseModel
+              in edn.cases) {
+            totalPart +=
+                caseModel.parts.length;
+
+            for (final part
+                in caseModel.parts) {
+              if (part.scannedQty ==
+                  part.targetQty) {
+                completedPart++;
+              }
+
+              final difference =
+                  part.scannedQty -
+                      part.targetQty;
+
+              if (difference != 0) {
+                discrepancies.add(
+                  _Discrepancy(
+                    caseNo:
+                        caseModel.caseNo,
+                    partNo:
+                        part.partNo,
+                    targetQty:
+                        part.targetQty,
+                    scannedQty:
+                        part.scannedQty,
+                    difference:
+                        difference,
+                  ),
+                );
+              }
+            }
+          }
+
+          final bool isComplete =
+              discrepancies.isEmpty &&
+              edn.completedCase ==
+                  edn.totalCase;
+
+          return SingleChildScrollView(
+            padding:
+                const EdgeInsets.all(16),
+
+            child: Column(
+              crossAxisAlignment:
+                  CrossAxisAlignment.start,
+
+              children: [
+                // =================================================
+                // TITLE
+                // =================================================
+
+                const _ReportTitle(),
+
+                const SizedBox(height: 16),
+
+                // =================================================
+                // DEALER INFO
+                // =================================================
+
+                _EdnInfoCard(
+                  dealerName:
+                      _dealerName,
+                  dealerCode:
+                      _dealerCode,
+                  dealerAddress:
+                      _dealerAddress,
+                  fileName:
+                      edn.fileName,
+                  profileLoading:
+                      _profileLoading,
+                ),
+
+                const SizedBox(height: 16),
+
+                // =================================================
+                // STATEMENT
+                // =================================================
+
+                const _StatementCard(),
+
+                const SizedBox(height: 16),
+
+                // =================================================
+                // RESULT
+                // =================================================
+
+                _ResultCard(
+                  isComplete:
+                      isComplete,
+                ),
+
+                const SizedBox(height: 16),
+
+                // =================================================
+                // SUMMARY
+                // =================================================
+
+                _SummaryCard(
+                  totalCase:
+                      edn.totalCase,
+
+                  completedCase:
+                      edn.completedCase,
+
+                  totalPart:
+                      totalPart,
+
+                  completedPart:
+                      completedPart,
+
+                  totalQty:
+                      edn.totalTarget,
+
+                  scannedQty:
+                      edn.totalScanned,
+
+                  discrepancies:
+                      discrepancies.length,
+                ),
+
+                // =================================================
+                // DISCREPANCY
+                // =================================================
+
+                if (discrepancies.isNotEmpty) ...[
+                  const SizedBox(height: 16),
+
+                  _DiscrepancyCard(
+                    discrepancies:
+                        discrepancies,
+                  ),
+                ],
+
+                const SizedBox(height: 24),
+
+                // =================================================
+                // DETAIL
+                // =================================================
+
+                const Text(
+                  'DETAIL PENGECEKAN',
+
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight:
+                        FontWeight.bold,
+                  ),
+                ),
+
+                const SizedBox(height: 10),
+
+                ...edn.cases.map(
+                  (caseModel) {
+                    return _CaseReportCard(
+                      caseModel:
+                          caseModel,
+                    );
+                  },
+                ),
+
+                const SizedBox(height: 24),
+
+                // =================================================
+                // EXPORT PDF
+                // =================================================
+
+                SizedBox(
+                  width:
+                      double.infinity,
+
+                  child:
+                      ElevatedButton.icon(
+                    onPressed: () async {
+                      await _handleExportPdf(
+                        context,
+                        provider,
+                      );
+                    },
+
+                    icon: const Icon(
+                      Icons.picture_as_pdf,
+                    ),
+
+                    label: const Text(
+                      'EXPORT PDF',
+                    ),
+
+                    style:
+                        ElevatedButton.styleFrom(
+                      padding:
+                          const EdgeInsets.symmetric(
+                        vertical: 15,
+                      ),
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 20),
+              ],
+            ),
+          );
+        },
       ),
     );
   }
 
   // =============================================================
-  // HANDLE EXPORT PDF
+  // HANDLE EXPORT
   // =============================================================
 
   Future<void> _handleExportPdf(
@@ -495,6 +475,9 @@ class _ReportScreenState extends State<ReportScreen> {
     await _exportPdf(
       context: context,
       edn: edn,
+      dealerName: _dealerName,
+      dealerCode: _dealerCode,
+      dealerAddress: _dealerAddress,
       completedPart:
           completedPart,
       totalPart:
@@ -503,12 +486,6 @@ class _ReportScreenState extends State<ReportScreen> {
           discrepancies,
       isComplete:
           isComplete,
-      dealerName:
-          _dealerName,
-      dealerCode:
-          _dealerCode,
-      dealerAddress:
-          _dealerAddress,
     );
   }
 
@@ -519,14 +496,18 @@ class _ReportScreenState extends State<ReportScreen> {
   static Future<void> _exportPdf({
     required BuildContext context,
     required dynamic edn,
-    required int completedPart,
-    required int totalPart,
-    required List<_Discrepancy>
-        discrepancies,
-    required bool isComplete,
+
     required String dealerName,
     required String dealerCode,
     required String dealerAddress,
+
+    required int completedPart,
+    required int totalPart,
+
+    required List<_Discrepancy>
+        discrepancies,
+
+    required bool isComplete,
   }) async {
     try {
       final pdf =
@@ -550,13 +531,13 @@ class _ReportScreenState extends State<ReportScreen> {
 
       pdf.addPage(
         pw.MultiPage(
+          maxPages: 200,
+
           pageFormat:
               PdfPageFormat.a4,
 
           margin:
-              const pw.EdgeInsets.all(
-            36,
-          ),
+              const pw.EdgeInsets.all(36),
 
           footer: (context) {
             return pw.Align(
@@ -565,6 +546,7 @@ class _ReportScreenState extends State<ReportScreen> {
 
               child: pw.Text(
                 'Halaman ${context.pageNumber}',
+
                 style:
                     const pw.TextStyle(
                   fontSize: 9,
@@ -575,10 +557,9 @@ class _ReportScreenState extends State<ReportScreen> {
 
           build: (context) {
             return [
-
-              // -------------------------------------------------
+              // =================================================
               // TITLE
-              // -------------------------------------------------
+              // =================================================
 
               pw.Center(
                 child: pw.Text(
@@ -588,8 +569,7 @@ class _ReportScreenState extends State<ReportScreen> {
                   textAlign:
                       pw.TextAlign.center,
 
-                  style:
-                      pw.TextStyle(
+                  style: pw.TextStyle(
                     fontSize: 16,
                     fontWeight:
                         pw.FontWeight.bold,
@@ -597,22 +577,18 @@ class _ReportScreenState extends State<ReportScreen> {
                 ),
               ),
 
-              pw.SizedBox(
-                height: 16,
-              ),
+              pw.SizedBox(height: 16),
 
-              // -------------------------------------------------
+              // =================================================
               // DEALER / EDN
-              // -------------------------------------------------
+              // =================================================
 
               pw.Container(
                 width:
                     double.infinity,
 
                 padding:
-                    const pw.EdgeInsets.all(
-                  12,
-                ),
+                    const pw.EdgeInsets.all(12),
 
                 decoration:
                     pw.BoxDecoration(
@@ -625,18 +601,15 @@ class _ReportScreenState extends State<ReportScreen> {
 
                 child: pw.Column(
                   crossAxisAlignment:
-                      pw.CrossAxisAlignment
-                          .start,
+                      pw.CrossAxisAlignment.start,
 
                   children: [
-
                     pw.Text(
                       dealerName.isEmpty
-                          ? 'NAMA DEALER BELUM DIATUR'
+                          ? '-'
                           : dealerName,
 
-                      style:
-                          pw.TextStyle(
+                      style: pw.TextStyle(
                         fontWeight:
                             pw.FontWeight.bold,
                         fontSize: 11,
@@ -646,25 +619,18 @@ class _ReportScreenState extends State<ReportScreen> {
                     if (dealerCode
                         .isNotEmpty)
                       pw.Text(
-                        'Kode Dealer : $dealerCode',
-                        style:
-                            const pw.TextStyle(
-                          fontSize: 9,
-                        ),
+                        'Kode Dealer : '
+                        '$dealerCode',
                       ),
 
                     if (dealerAddress
                         .isNotEmpty)
                       pw.Text(
                         dealerAddress,
-                        style:
-                            const pw.TextStyle(
-                          fontSize: 9,
-                        ),
                       ),
 
                     pw.SizedBox(
-                      height: 6,
+                      height: 8,
                     ),
 
                     pw.Text(
@@ -672,23 +638,23 @@ class _ReportScreenState extends State<ReportScreen> {
                     ),
 
                     pw.Text(
-                      'Tanggal Checking : $date',
+                      'Tanggal Checking : '
+                      '$date',
                     ),
 
                     pw.Text(
-                      'Waktu Checking : $time',
+                      'Waktu Checking : '
+                      '$time',
                     ),
                   ],
                 ),
               ),
 
-              pw.SizedBox(
-                height: 16,
-              ),
+              pw.SizedBox(height: 16),
 
-              // -------------------------------------------------
+              // =================================================
               // STATEMENT
-              // -------------------------------------------------
+              // =================================================
 
               pw.Text(
                 'Diterangkan bahwa pada tanggal '
@@ -704,22 +670,18 @@ class _ReportScreenState extends State<ReportScreen> {
                 ),
               ),
 
-              pw.SizedBox(
-                height: 18,
-              ),
+              pw.SizedBox(height: 18),
 
-              // -------------------------------------------------
+              // =================================================
               // RESULT
-              // -------------------------------------------------
+              // =================================================
 
               pw.Container(
                 width:
                     double.infinity,
 
                 padding:
-                    const pw.EdgeInsets.all(
-                  14,
-                ),
+                    const pw.EdgeInsets.all(14),
 
                 decoration:
                     pw.BoxDecoration(
@@ -739,12 +701,10 @@ class _ReportScreenState extends State<ReportScreen> {
 
                 child: pw.Column(
                   children: [
-
                     pw.Text(
                       'HASIL PENGECEKAN',
 
-                      style:
-                          pw.TextStyle(
+                      style: pw.TextStyle(
                         fontWeight:
                             pw.FontWeight.bold,
 
@@ -766,8 +726,7 @@ class _ReportScreenState extends State<ReportScreen> {
                       textAlign:
                           pw.TextAlign.center,
 
-                      style:
-                          pw.TextStyle(
+                      style: pw.TextStyle(
                         fontWeight:
                             pw.FontWeight.bold,
                         fontSize: 13,
@@ -777,8 +736,7 @@ class _ReportScreenState extends State<ReportScreen> {
                     if (!isComplete)
                       pw.Padding(
                         padding:
-                            const pw.EdgeInsets
-                                .only(
+                            const pw.EdgeInsets.only(
                           top: 4,
                         ),
 
@@ -795,28 +753,23 @@ class _ReportScreenState extends State<ReportScreen> {
                 ),
               ),
 
-              pw.SizedBox(
-                height: 18,
-              ),
+              pw.SizedBox(height: 18),
 
-              // -------------------------------------------------
+              // =================================================
               // SUMMARY
-              // -------------------------------------------------
+              // =================================================
 
               pw.Text(
                 'SUMMARY',
 
-                style:
-                    pw.TextStyle(
+                style: pw.TextStyle(
                   fontSize: 13,
                   fontWeight:
                       pw.FontWeight.bold,
                 ),
               ),
 
-              pw.SizedBox(
-                height: 8,
-              ),
+              pw.SizedBox(height: 8),
 
               pw.Table(
                 border:
@@ -827,30 +780,29 @@ class _ReportScreenState extends State<ReportScreen> {
 
                 columnWidths: {
                   0:
-                      const pw.FlexColumnWidth(
-                    2,
-                  ),
+                      const pw.FlexColumnWidth(2),
+
                   1:
-                      const pw.FlexColumnWidth(
-                    1,
-                  ),
+                      const pw.FlexColumnWidth(1),
                 },
 
                 children: [
-
                   _pdfSummaryRow(
                     'Total Case',
-                    '${edn.completedCase} / ${edn.totalCase}',
+                    '${edn.completedCase} / '
+                    '${edn.totalCase}',
                   ),
 
                   _pdfSummaryRow(
                     'Total PNO',
-                    '$completedPart / $totalPart',
+                    '$completedPart / '
+                    '$totalPart',
                   ),
 
                   _pdfSummaryRow(
                     'Total Qty',
-                    '${edn.totalScanned} / ${edn.totalTarget}',
+                    '${edn.totalScanned} / '
+                    '${edn.totalTarget}',
                   ),
 
                   _pdfSummaryRow(
@@ -872,9 +824,9 @@ class _ReportScreenState extends State<ReportScreen> {
                 ],
               ),
 
-              // -------------------------------------------------
+              // =================================================
               // DISCREPANCY
-              // -------------------------------------------------
+              // =================================================
 
               if (discrepancies
                   .isNotEmpty) ...[
@@ -885,11 +837,11 @@ class _ReportScreenState extends State<ReportScreen> {
                 pw.Text(
                   'KETIDAKSESUAIAN',
 
-                  style:
-                      pw.TextStyle(
+                  style: pw.TextStyle(
                     fontSize: 13,
                     fontWeight:
                         pw.FontWeight.bold,
+
                     color:
                         PdfColors.red,
                   ),
@@ -903,8 +855,7 @@ class _ReportScreenState extends State<ReportScreen> {
                   (item) {
                     return pw.Container(
                       margin:
-                          const pw.EdgeInsets
-                              .only(
+                          const pw.EdgeInsets.only(
                         bottom: 8,
                       ),
 
@@ -924,13 +875,12 @@ class _ReportScreenState extends State<ReportScreen> {
 
                       child: pw.Column(
                         crossAxisAlignment:
-                            pw.CrossAxisAlignment
-                                .start,
+                            pw.CrossAxisAlignment.start,
 
                         children: [
-
                           pw.Text(
-                            'CASE : ${item.caseNo}',
+                            'CASE : '
+                            '${item.caseNo}',
 
                             style:
                                 pw.TextStyle(
@@ -940,20 +890,22 @@ class _ReportScreenState extends State<ReportScreen> {
                           ),
 
                           pw.Text(
-                            'PNO : ${item.partNo}',
+                            'PNO : '
+                            '${item.partNo}',
                           ),
 
                           pw.Text(
-                            'EDN Qty : ${item.targetQty}',
+                            'EDN Qty : '
+                            '${item.targetQty}',
                           ),
 
                           pw.Text(
-                            'Scan Qty : ${item.scannedQty}',
+                            'Scan Qty : '
+                            '${item.scannedQty}',
                           ),
 
                           pw.Text(
                             'Selisih : '
-                            '${item.difference > 0 ? '+' : ''}'
                             '${item.difference}',
                           ),
                         ],
@@ -969,17 +921,22 @@ class _ReportScreenState extends State<ReportScreen> {
 
       // =========================================================
       // DETAIL PAGES
+      //
+      // PENTING:
+      // Setiap CASE HEADER dan TABLE dibuat sebagai widget
+      // terpisah agar MultiPage dapat memecah tabel ke halaman
+      // berikutnya.
       // =========================================================
 
       pdf.addPage(
         pw.MultiPage(
+          maxPages: 200,
+
           pageFormat:
               PdfPageFormat.a4,
 
           margin:
-              const pw.EdgeInsets.all(
-            30,
-          ),
+              const pw.EdgeInsets.all(30),
 
           footer: (context) {
             return pw.Align(
@@ -988,6 +945,7 @@ class _ReportScreenState extends State<ReportScreen> {
 
               child: pw.Text(
                 'Halaman ${context.pageNumber}',
+
                 style:
                     const pw.TextStyle(
                   fontSize: 9,
@@ -1000,12 +958,15 @@ class _ReportScreenState extends State<ReportScreen> {
             final List<pw.Widget>
                 widgets = [];
 
+            // ===================================================
+            // TITLE
+            // ===================================================
+
             widgets.add(
               pw.Text(
                 'LAMPIRAN DATA HASIL PENGECEKAN',
 
-                style:
-                    pw.TextStyle(
+                style: pw.TextStyle(
                   fontSize: 15,
                   fontWeight:
                       pw.FontWeight.bold,
@@ -1019,176 +980,183 @@ class _ReportScreenState extends State<ReportScreen> {
               ),
             );
 
+            // ===================================================
+            // CASE
+            // ===================================================
+
             for (final caseModel
                 in edn.cases) {
+              // -------------------------------------------------
+              // CASE HEADER
+              // -------------------------------------------------
+
               widgets.add(
                 pw.Container(
-                  margin:
-                      const pw.EdgeInsets
-                          .only(
-                    bottom: 14,
-                  ),
+                  width:
+                      double.infinity,
 
-                  child: pw.Column(
-                    crossAxisAlignment:
-                        pw.CrossAxisAlignment
-                            .start,
+                  padding:
+                      const pw.EdgeInsets.all(8),
 
+                  color:
+                      PdfColors.grey200,
+
+                  child: pw.Row(
                     children: [
+                      pw.Expanded(
+                        child: pw.Text(
+                          'CASE : '
+                          '${caseModel.caseNo}',
 
-                      // -----------------------------------------
-                      // CASE HEADER
-                      // -----------------------------------------
-
-                      pw.Container(
-                        width:
-                            double.infinity,
-
-                        padding:
-                            const pw.EdgeInsets
-                                .all(
-                          8,
-                        ),
-
-                        color:
-                            PdfColors.grey200,
-
-                        child: pw.Row(
-                          children: [
-
-                            pw.Expanded(
-                              child: pw.Text(
-                                'CASE : ${caseModel.caseNo}',
-
-                                style:
-                                    pw.TextStyle(
-                                  fontWeight:
-                                      pw.FontWeight.bold,
-                                ),
-                              ),
-                            ),
-
-                            pw.Text(
-                              'Qty ${caseModel.totalScanned}'
-                              '/${caseModel.totalTarget}',
-                            ),
-                          ],
+                          style:
+                              pw.TextStyle(
+                            fontWeight:
+                                pw.FontWeight.bold,
+                          ),
                         ),
                       ),
 
-                      // -----------------------------------------
-                      // PART TABLE
-                      // -----------------------------------------
-
-                      pw.Table(
-                        border:
-                            pw.TableBorder.all(
-                          color:
-                              PdfColors.grey400,
-                        ),
-
-                        columnWidths: {
-                          0:
-                              const pw.FlexColumnWidth(
-                            3,
-                          ),
-                          1:
-                              const pw.FlexColumnWidth(
-                            1,
-                          ),
-                          2:
-                              const pw.FlexColumnWidth(
-                            1,
-                          ),
-                          3:
-                              const pw.FlexColumnWidth(
-                            1,
-                          ),
-                          4:
-                              const pw.FlexColumnWidth(
-                            1.5,
-                          ),
-                        },
-
-                        children: [
-
-                          pw.TableRow(
-                            decoration:
-                                const pw.BoxDecoration(
-                              color:
-                                  PdfColors.grey100,
-                            ),
-
-                            children: [
-
-                              _pdfCell(
-                                'PNO',
-                                bold: true,
-                              ),
-
-                              _pdfCell(
-                                'EDN',
-                                bold: true,
-                              ),
-
-                              _pdfCell(
-                                'SCAN',
-                                bold: true,
-                              ),
-
-                              _pdfCell(
-                                'SELISIH',
-                                bold: true,
-                              ),
-
-                              _pdfCell(
-                                'STATUS',
-                                bold: true,
-                              ),
-                            ],
-                          ),
-
-                          ...caseModel.parts.map(
-                            (part) {
-                              final difference =
-                                  part.scannedQty -
-                                      part.targetQty;
-
-                              final match =
-                                  difference == 0;
-
-                              return pw.TableRow(
-                                children: [
-
-                                  _pdfCell(
-                                    part.partNo,
-                                  ),
-
-                                  _pdfCell(
-                                    '${part.targetQty}',
-                                  ),
-
-                                  _pdfCell(
-                                    '${part.scannedQty}',
-                                  ),
-
-                                  _pdfCell(
-                                    '$difference',
-                                  ),
-
-                                  _pdfCell(
-                                    match
-                                        ? 'SESUAI'
-                                        : 'SELISIH',
-                                  ),
-                                ],
-                              );
-                            },
-                          ),
-                        ],
+                      pw.Text(
+                        'Qty '
+                        '${caseModel.totalScanned}'
+                        '/'
+                        '${caseModel.totalTarget}',
                       ),
                     ],
                   ),
+                ),
+              );
+
+              widgets.add(
+                pw.SizedBox(
+                  height: 4,
+                ),
+              );
+
+              // -------------------------------------------------
+              // TABLE
+              //
+              // Table sengaja TIDAK dibungkus Column besar.
+              // Ini memungkinkan MultiPage memecah tabel apabila
+              // jumlah PNO dalam satu CASE sangat banyak.
+              // -------------------------------------------------
+
+              widgets.add(
+                pw.Table(
+                  border:
+                      pw.TableBorder.all(
+                    color:
+                        PdfColors.grey400,
+                  ),
+
+                  columnWidths: {
+                    0:
+                        const pw.FlexColumnWidth(3),
+
+                    1:
+                        const pw.FlexColumnWidth(1),
+
+                    2:
+                        const pw.FlexColumnWidth(1),
+
+                    3:
+                        const pw.FlexColumnWidth(1),
+
+                    4:
+                        const pw.FlexColumnWidth(1.5),
+                  },
+
+                  children: [
+                    // -------------------------------------------
+                    // TABLE HEADER
+                    // -------------------------------------------
+
+                    pw.TableRow(
+                      decoration:
+                          const pw.BoxDecoration(
+                        color:
+                            PdfColors.grey100,
+                      ),
+
+                      children: [
+                        _pdfCell(
+                          'PNO',
+                          bold: true,
+                        ),
+
+                        _pdfCell(
+                          'EDN',
+                          bold: true,
+                        ),
+
+                        _pdfCell(
+                          'SCAN',
+                          bold: true,
+                        ),
+
+                        _pdfCell(
+                          'SELISIH',
+                          bold: true,
+                        ),
+
+                        _pdfCell(
+                          'STATUS',
+                          bold: true,
+                        ),
+                      ],
+                    ),
+
+                    // -------------------------------------------
+                    // PART DATA
+                    // -------------------------------------------
+
+                    ...caseModel.parts.map(
+                      (part) {
+                        final difference =
+                            part.scannedQty -
+                                part.targetQty;
+
+                        final match =
+                            difference == 0;
+
+                        return pw.TableRow(
+                          children: [
+                            _pdfCell(
+                              part.partNo,
+                            ),
+
+                            _pdfCell(
+                              '${part.targetQty}',
+                            ),
+
+                            _pdfCell(
+                              '${part.scannedQty}',
+                            ),
+
+                            _pdfCell(
+                              '$difference',
+                            ),
+
+                            _pdfCell(
+                              match
+                                  ? 'SESUAI'
+                                  : 'SELISIH',
+                            ),
+                          ],
+                        );
+                      },
+                    ),
+                  ],
+                ),
+              );
+
+              // -------------------------------------------------
+              // SPACE ANTAR CASE
+              // -------------------------------------------------
+
+              widgets.add(
+                pw.SizedBox(
+                  height: 14,
                 ),
               );
             }
@@ -1199,14 +1167,19 @@ class _ReportScreenState extends State<ReportScreen> {
       );
 
       // =========================================================
-      // SHARE / SAVE PDF
+      // SAVE PDF
       // =========================================================
 
       final bytes =
           await pdf.save();
 
+      // =========================================================
+      // SHARE / SAVE
+      // =========================================================
+
       await Printing.sharePdf(
         bytes: bytes,
+
         filename:
             'Report_${_safeFileName(edn.fileName)}.pdf',
       );
@@ -1219,6 +1192,7 @@ class _ReportScreenState extends State<ReportScreen> {
             content: Text(
               'Gagal membuat PDF: $e',
             ),
+
             backgroundColor:
                 Colors.red,
           ),
@@ -1237,7 +1211,6 @@ class _ReportScreenState extends State<ReportScreen> {
   ) {
     return pw.TableRow(
       children: [
-
         _pdfCell(
           label,
           bold: true,
@@ -1260,15 +1233,12 @@ class _ReportScreenState extends State<ReportScreen> {
   }) {
     return pw.Padding(
       padding:
-          const pw.EdgeInsets.all(
-        6,
-      ),
+          const pw.EdgeInsets.all(6),
 
       child: pw.Text(
         text,
 
-        style:
-            pw.TextStyle(
+        style: pw.TextStyle(
           fontSize: 8,
 
           fontWeight: bold
@@ -1280,7 +1250,7 @@ class _ReportScreenState extends State<ReportScreen> {
   }
 
   // =============================================================
-  // FILE NAME
+  // SAFE FILE NAME
   // =============================================================
 
   static String _safeFileName(
@@ -1314,18 +1284,19 @@ class _ReportTitle
   Widget build(
     BuildContext context,
   ) {
-    return const Text(
-      'BERITA ACARA PENERIMAAN BARANG\n'
-      'KIRIMAN DARI EKSPEDISI',
+    return const Center(
+      child: Text(
+        'BERITA ACARA PENERIMAAN BARANG\n'
+        'KIRIMAN DARI EKSPEDISI',
 
-      textAlign:
-          TextAlign.center,
+        textAlign:
+            TextAlign.center,
 
-      style:
-          TextStyle(
-        fontSize: 20,
-        fontWeight:
-            FontWeight.bold,
+        style: TextStyle(
+          fontSize: 20,
+          fontWeight:
+              FontWeight.bold,
+        ),
       ),
     );
   }
@@ -1337,17 +1308,18 @@ class _ReportTitle
 
 class _EdnInfoCard
     extends StatelessWidget {
-  final String fileName;
-
   final String dealerName;
   final String dealerCode;
   final String dealerAddress;
+  final String fileName;
+  final bool profileLoading;
 
   const _EdnInfoCard({
-    required this.fileName,
     required this.dealerName,
     required this.dealerCode,
     required this.dealerAddress,
+    required this.fileName,
+    required this.profileLoading,
   });
 
   @override
@@ -1359,77 +1331,81 @@ class _EdnInfoCard
 
       child: Padding(
         padding:
-            const EdgeInsets.all(
-          16,
-        ),
+            const EdgeInsets.all(16),
 
         child: Column(
           crossAxisAlignment:
               CrossAxisAlignment.start,
 
           children: [
-
-            Text(
-              dealerName.isEmpty
-                  ? 'NAMA DEALER BELUM DIATUR'
-                  : dealerName,
-
-              style:
-                  const TextStyle(
-                fontSize: 15,
-                fontWeight:
-                    FontWeight.bold,
-              ),
-            ),
-
-            if (dealerCode
-                .isNotEmpty) ...[
+            if (profileLoading)
               const SizedBox(
-                height: 4,
-              ),
-
+                height: 20,
+                width: 20,
+                child:
+                    CircularProgressIndicator(
+                  strokeWidth: 2,
+                ),
+              )
+            else ...[
               Text(
-                'Kode Dealer : $dealerCode',
+                dealerName.isEmpty
+                    ? 'Nama dealer belum diatur'
+                    : dealerName,
 
-                style:
-                    const TextStyle(
-                  fontSize: 12,
-                  color:
-                      Colors.grey,
+                style: const TextStyle(
+                  fontSize: 15,
+                  fontWeight:
+                      FontWeight.bold,
                 ),
               ),
-            ],
 
-            if (dealerAddress
-                .isNotEmpty) ...[
-              const SizedBox(
-                height: 4,
-              ),
-
-              Text(
-                dealerAddress,
-
-                style:
-                    const TextStyle(
-                  fontSize: 12,
-                  color:
-                      Colors.grey,
+              if (dealerCode
+                  .isNotEmpty) ...[
+                const SizedBox(
+                  height: 5,
                 ),
-              ),
+
+                Text(
+                  'Kode Dealer : '
+                  '$dealerCode',
+
+                  style:
+                      const TextStyle(
+                    fontSize: 13,
+                    color: Colors.grey,
+                  ),
+                ),
+              ],
+
+              if (dealerAddress
+                  .isNotEmpty) ...[
+                const SizedBox(
+                  height: 3,
+                ),
+
+                Text(
+                  dealerAddress,
+
+                  style:
+                      const TextStyle(
+                    fontSize: 13,
+                    color: Colors.grey,
+                  ),
+                ),
+              ],
             ],
 
             const SizedBox(
-              height: 10,
+              height: 12,
             ),
 
             const Text(
               'EDN',
 
-              style:
-                  TextStyle(
+              style: TextStyle(
                 fontSize: 12,
-                color:
-                    Colors.grey,
+                color: Colors.grey,
               ),
             ),
 
@@ -1440,8 +1416,7 @@ class _EdnInfoCard
             Text(
               fileName,
 
-              style:
-                  const TextStyle(
+              style: const TextStyle(
                 fontSize: 15,
                 fontWeight:
                     FontWeight.w600,
@@ -1483,9 +1458,7 @@ class _StatementCard
 
       child: Padding(
         padding:
-            const EdgeInsets.all(
-          16,
-        ),
+            const EdgeInsets.all(16),
 
         child: Text(
           'Diterangkan bahwa pada tanggal '
@@ -1526,23 +1499,17 @@ class _ResultCard
           double.infinity,
 
       padding:
-          const EdgeInsets.all(
-        18,
-      ),
+          const EdgeInsets.all(18),
 
-      decoration:
-          BoxDecoration(
+      decoration: BoxDecoration(
         color: isComplete
             ? Colors.green.shade50
             : Colors.red.shade50,
 
         borderRadius:
-            BorderRadius.circular(
-          10,
-        ),
+            BorderRadius.circular(10),
 
-        border:
-            Border.all(
+        border: Border.all(
           color: isComplete
               ? Colors.green
               : Colors.red,
@@ -1551,7 +1518,6 @@ class _ResultCard
 
       child: Column(
         children: [
-
           Icon(
             isComplete
                 ? Icons.check_circle
@@ -1571,8 +1537,7 @@ class _ResultCard
           Text(
             'HASIL PENGECEKAN',
 
-            style:
-                TextStyle(
+            style: TextStyle(
               fontWeight:
                   FontWeight.bold,
 
@@ -1646,21 +1611,17 @@ class _SummaryCard
 
       child: Padding(
         padding:
-            const EdgeInsets.all(
-          16,
-        ),
+            const EdgeInsets.all(16),
 
         child: Column(
           crossAxisAlignment:
               CrossAxisAlignment.start,
 
           children: [
-
             const Text(
               'SUMMARY',
 
-              style:
-                  TextStyle(
+              style: TextStyle(
                 fontSize: 18,
                 fontWeight:
                     FontWeight.bold,
@@ -1672,31 +1633,32 @@ class _SummaryCard
             ),
 
             _SummaryRow(
-              label:
-                  'Total Case',
+              label: 'Total Case',
               value:
-                  '$completedCase / $totalCase',
+                  '$completedCase / '
+                  '$totalCase',
             ),
 
             _SummaryRow(
-              label:
-                  'Total PNO',
+              label: 'Total PNO',
               value:
-                  '$completedPart / $totalPart',
+                  '$completedPart / '
+                  '$totalPart',
             ),
 
             _SummaryRow(
-              label:
-                  'Total Qty',
+              label: 'Total Qty',
               value:
-                  '$scannedQty / $totalQty',
+                  '$scannedQty / '
+                  '$totalQty',
             ),
 
             _SummaryRow(
-              label:
-                  'Selisih Qty',
+              label: 'Selisih Qty',
               value:
-                  '${difference > 0 ? '+' : ''}$difference',
+                  '${difference > 0 ? '+' : ''}'
+                  '$difference',
+
               valueColor:
                   difference == 0
                       ? Colors.green
@@ -1706,8 +1668,10 @@ class _SummaryCard
             _SummaryRow(
               label:
                   'Ketidaksesuaian',
+
               value:
                   '$discrepancies item',
+
               valueColor:
                   discrepancies == 0
                       ? Colors.green
@@ -1719,12 +1683,13 @@ class _SummaryCard
             ),
 
             _SummaryRow(
-              label:
-                  'Status',
+              label: 'Status',
+
               value:
                   discrepancies == 0
                       ? 'SESUAI'
                       : 'TIDAK SESUAI',
+
               valueColor:
                   discrepancies == 0
                       ? Colors.green
@@ -1765,15 +1730,13 @@ class _SummaryRow
 
       child: Row(
         children: [
-
           Expanded(
             child: Text(
               label,
 
               style:
                   const TextStyle(
-                color:
-                    Colors.grey,
+                color: Colors.grey,
               ),
             ),
           ),
@@ -1781,12 +1744,10 @@ class _SummaryRow
           Text(
             value,
 
-            style:
-                TextStyle(
+            style: TextStyle(
               fontWeight:
                   FontWeight.bold,
-              color:
-                  valueColor,
+              color: valueColor,
             ),
           ),
         ],
@@ -1820,24 +1781,18 @@ class _DiscrepancyCard
 
       child: Padding(
         padding:
-            const EdgeInsets.all(
-          16,
-        ),
+            const EdgeInsets.all(16),
 
         child: Column(
           crossAxisAlignment:
               CrossAxisAlignment.start,
 
           children: [
-
             Row(
               children: [
-
                 const Icon(
-                  Icons
-                      .warning_amber_rounded,
-                  color:
-                      Colors.red,
+                  Icons.warning_amber_rounded,
+                  color: Colors.red,
                 ),
 
                 const SizedBox(
@@ -1848,8 +1803,7 @@ class _DiscrepancyCard
                   child: Text(
                     'KETIDAKSESUAIAN',
 
-                    style:
-                        TextStyle(
+                    style: TextStyle(
                       fontSize: 17,
                       fontWeight:
                           FontWeight.bold,
@@ -1867,26 +1821,25 @@ class _DiscrepancyCard
 
             ...List.generate(
               discrepancies.length,
+
               (index) {
                 final item =
                     discrepancies[index];
 
                 return Padding(
                   padding:
-                      const EdgeInsets
-                          .only(
+                      const EdgeInsets.only(
                     bottom: 14,
                   ),
 
                   child: Column(
                     crossAxisAlignment:
-                        CrossAxisAlignment
-                            .start,
+                        CrossAxisAlignment.start,
 
                     children: [
-
                       Text(
-                        '${index + 1}. CASE : ${item.caseNo}',
+                        '${index + 1}. CASE : '
+                        '${item.caseNo}',
 
                         style:
                             const TextStyle(
@@ -1900,15 +1853,18 @@ class _DiscrepancyCard
                       ),
 
                       Text(
-                        '   PNO  : ${item.partNo}',
+                        '   PNO  : '
+                        '${item.partNo}',
                       ),
 
                       Text(
-                        '   EDN  : ${item.targetQty}',
+                        '   EDN  : '
+                        '${item.targetQty}',
                       ),
 
                       Text(
-                        '   Scan : ${item.scannedQty}',
+                        '   Scan : '
+                        '${item.scannedQty}',
                       ),
 
                       Text(
@@ -1934,11 +1890,9 @@ class _DiscrepancyCard
               'Detail lengkap dapat dilihat pada '
               'bagian Detail Pengecekan.',
 
-              style:
-                  TextStyle(
+              style: TextStyle(
                 fontSize: 12,
-                color:
-                    Colors.grey,
+                color: Colors.grey,
               ),
             ),
           ],
@@ -1976,8 +1930,7 @@ class _CaseReportCard
         leading: Icon(
           caseModel.isComplete
               ? Icons.check_circle
-              : Icons
-                  .warning_amber_rounded,
+              : Icons.warning_amber_rounded,
 
           color:
               caseModel.isComplete
@@ -1996,12 +1949,12 @@ class _CaseReportCard
         ),
 
         subtitle: Text(
-          'Qty ${caseModel.totalScanned}/'
+          'Qty '
+          '${caseModel.totalScanned}/'
           '${caseModel.totalTarget}',
         ),
 
         children: [
-
           Padding(
             padding:
                 const EdgeInsets.fromLTRB(
@@ -2059,10 +2012,8 @@ class _PartReportRow
 
       decoration:
           BoxDecoration(
-        border:
-            Border(
-          bottom:
-              BorderSide(
+        border: Border(
+          bottom: BorderSide(
             color:
                 Colors.grey.shade200,
           ),
@@ -2071,18 +2022,17 @@ class _PartReportRow
 
       child: Row(
         children: [
-
           Icon(
             match
                 ? Icons.check_circle
-                : Icons
-                    .warning_amber_rounded,
+                : Icons.warning_amber_rounded,
 
             size: 20,
 
-            color: match
-                ? Colors.green
-                : Colors.red,
+            color:
+                match
+                    ? Colors.green
+                    : Colors.red,
           ),
 
           const SizedBox(
@@ -2106,7 +2056,6 @@ class _PartReportRow
                 CrossAxisAlignment.end,
 
             children: [
-
               Text(
                 '${part.scannedQty} / '
                 '${part.targetQty}',
