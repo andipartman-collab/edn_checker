@@ -10,10 +10,11 @@ class HomeHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        const Icon(
-          Icons.local_shipping,
-          size: 38,
-          color: AppColors.toyotaRed,
+        Image.asset(
+          'assets/images/nasmoco_logo.png',
+          width: 90,
+          height: 50,
+          fit: BoxFit.contain,
         ),
 
         const SizedBox(width: 12),
@@ -24,20 +25,20 @@ class HomeHeader extends StatelessWidget {
             children: [
 
               Text(
-                "EDN CHECKER",
+                "EDN SCANNER",
                 style: TextStyle(
                   fontSize: 28,
                   fontWeight: FontWeight.bold,
                 ),
               ),
 
-              SizedBox(height: 2),
+              SizedBox(height: 1),
 
               Text(
-                "Electronic Delivery Note",
+                "Electronic Delivery Note Scanner",
                 style: TextStyle(
                   color: Colors.grey,
-                  fontSize: 14,
+                  fontSize: 10,
                 ),
               ),
             ],

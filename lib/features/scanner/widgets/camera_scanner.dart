@@ -30,7 +30,7 @@ class _CameraScannerState extends State<CameraScanner> {
   // ---------------------------------
 
   static const double _scanWidth = 280;
-  static const double _scanHeight = 130;
+  static const double _scanHeight = 126;
 
   // ---------------------------------
   // INTERVAL CONTINUOUS SCAN
@@ -255,7 +255,7 @@ class _CameraScannerState extends State<CameraScanner> {
 
                             style: const TextStyle(
                               color: Colors.white,
-                              fontSize: 20,
+                              fontSize: 22,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
@@ -348,7 +348,7 @@ class _CameraScannerState extends State<CameraScanner> {
                     // ---------------------------------
 
                     Positioned(
-                      bottom: 105,
+                      bottom: 104,
                       left: 20,
                       right: 20,
 
@@ -363,7 +363,7 @@ class _CameraScannerState extends State<CameraScanner> {
                           color:
                               Colors.white.withOpacity(0.9),
 
-                          fontSize: 12,
+                          fontSize: 11,
 
                           fontWeight:
                               FontWeight.w500,

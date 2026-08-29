@@ -23,9 +23,6 @@ class _ScannerInputState extends State<ScannerInput> {
   void initState() {
     super.initState();
 
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      focusNode.requestFocus();
-    });
   }
 
   void submit() {
