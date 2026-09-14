@@ -223,13 +223,14 @@ class _SettingsScreenState
             const SizedBox(height: 20),
 
             // ---------------------------------
-            // APP ICON
+            // APP LOGO
             // ---------------------------------
 
-            const Icon(
-              Icons.qr_code_scanner,
-              size: 40,
-              color: Colors.blueGrey,
+            Image.asset(
+              'assets/images/nasmoco_logo.png',
+              width: 80,
+              height: 80,
+              fit: BoxFit.contain,
             ),
 
             const SizedBox(height: 10),
@@ -239,7 +240,7 @@ class _SettingsScreenState
             // ---------------------------------
 
             const Text(
-              'EDN Checker',
+              'EDN Scanner',
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
