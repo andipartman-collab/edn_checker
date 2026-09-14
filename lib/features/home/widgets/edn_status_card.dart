@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../../../core/theme/app_text.dart';
 import '../../../providers/scanner_provider.dart';
 
 class EdnStatusCard extends StatelessWidget {
@@ -14,7 +13,10 @@ class EdnStatusCard extends StatelessWidget {
         return AnimatedContainer(
           duration: const Duration(milliseconds: 300),
           width: double.infinity,
-          padding: const EdgeInsets.all(18),
+          padding: const EdgeInsets.symmetric(
+            horizontal: 18,
+            vertical: 14,
+          ),
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(18),
@@ -29,9 +31,28 @@ class EdnStatusCard extends StatelessWidget {
           child: provider.hasEdn
               ? Column(
                   children: [
-                    const Text(
-                      "🟢 EDN SIAP",
-                      style: AppText.status,
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          width: 11,
+                          height: 11,
+                          decoration: const BoxDecoration(
+                            color: Colors.green,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        const Text(
+                          'EDN READY',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w700,
+                            height: 1.0,
+                          ),
+                        ),
+                      ],
                     ),
 
                     const SizedBox(height: 12),
@@ -39,31 +60,36 @@ class EdnStatusCard extends StatelessWidget {
                     Text(
                       provider.currentEdn!.fileName,
                       textAlign: TextAlign.center,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 17,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 15,
+                        height: 1.25,
                       ),
                     ),
 
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 16),
 
                     Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceAround,
                       children: [
-
-                        _InfoItem(
-                          value: provider.currentEdn!.totalCase.toString(),
-                          title: "Case",
+                        Expanded(
+                          child: _InfoItem(
+                            value: provider.currentEdn!.totalCase.toString(),
+                            title: 'Case',
+                          ),
                         ),
-
-                        _InfoItem(
-                          value: provider.currentEdn!.totalPartNumber.toString(),
-                          title: "Part No",
+                        Expanded(
+                          child: _InfoItem(
+                            value: provider.currentEdn!.totalPartNumber.toString(),
+                            title: 'Part No',
+                          ),
                         ),
-
-                        _InfoItem(
-                          value: provider.currentEdn!.totalTarget.toString(),
-                          title: "Qty",
+                        Expanded(
+                          child: _InfoItem(
+                            value: provider.currentEdn!.totalTarget.toString(),
+                            title: 'Qty',
+                          ),
                         ),
                       ],
                     ),
@@ -72,16 +98,18 @@ class EdnStatusCard extends StatelessWidget {
               : const Column(
                   children: [
                     Text(
-                      "🔴 BELUM ADA EDN",
-                      style: AppText.status,
+                      'BELUM ADA EDN',
+                      style: TextStyle(
+                        fontSize: 17,
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
-
                     SizedBox(height: 8),
-
                     Text(
-                      "Silakan upload file EDN",
+                      'Silakan upload file EDN',
                       style: TextStyle(
                         color: Colors.grey,
+                        fontSize: 13,
                       ),
                     ),
                   ],
@@ -108,18 +136,17 @@ class _InfoItem extends StatelessWidget {
         Text(
           value,
           style: const TextStyle(
-            fontSize: 24,
+            fontSize: 21,
             fontWeight: FontWeight.bold,
             color: Colors.red,
+            height: 1.0,
           ),
         ),
-
-        const SizedBox(height: 5),
-
+        const SizedBox(height: 6),
         Text(
           title,
           style: const TextStyle(
-            fontSize: 14,
+            fontSize: 13,
             color: Colors.black87,
           ),
         ),
