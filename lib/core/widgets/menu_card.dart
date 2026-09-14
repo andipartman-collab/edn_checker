@@ -19,12 +19,12 @@ class MenuCard extends StatelessWidget {
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        borderRadius: BorderRadius.circular(22),
+        borderRadius: BorderRadius.circular(20),
         onTap: onTap,
         child: Ink(
-          height: 110,
+          height: 92,
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(22),
+            borderRadius: BorderRadius.circular(20),
             gradient: LinearGradient(
               colors: [
                 color,
@@ -33,32 +33,32 @@ class MenuCard extends StatelessWidget {
             ),
             boxShadow: [
               BoxShadow(
-                color: color.withOpacity(0.35),
-                blurRadius: 12,
-                offset: const Offset(0, 5),
+                color: color.withOpacity(0.28),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
               ),
             ],
           ),
           child: Row(
             children: [
-
-              const SizedBox(width: 25),
+              const SizedBox(width: 24),
 
               Icon(
                 icon,
-                size: 42,
+                size: 32,
                 color: Colors.white,
               ),
 
-              const SizedBox(width: 22),
+              const SizedBox(width: 18),
 
               Expanded(
                 child: Text(
                   title,
                   style: const TextStyle(
                     color: Colors.white,
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
+                    fontSize: 19,
+                    fontWeight: FontWeight.w700,
+                    height: 1.0,
                   ),
                 ),
               ),
@@ -67,9 +67,10 @@ class MenuCard extends StatelessWidget {
                 padding: EdgeInsets.only(right: 20),
                 child: Icon(
                   Icons.arrow_forward_ios,
+                  size: 20,
                   color: Colors.white,
                 ),
-              )
+              ),
             ],
           ),
         ),
