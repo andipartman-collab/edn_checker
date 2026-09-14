@@ -11,7 +11,7 @@ class HomeHeader extends StatelessWidget {
     return Row(
       children: [
         Image.asset(
-          'assets/images/nasmoco_logo.png',
+          'assets/images/edn_scanner_logo.png',
           width: 90,
           height: 50,
           fit: BoxFit.contain,
@@ -23,7 +23,6 @@ class HomeHeader extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-
               Text(
                 "EDN SCANNER",
                 style: TextStyle(
@@ -45,13 +44,8 @@ class HomeHeader extends StatelessWidget {
           ),
         ),
 
-        // ---------------------------------
-        // SETTING
-        // ---------------------------------
-
         IconButton(
           tooltip: "Pengaturan",
-
           onPressed: () {
             Navigator.push(
               context,
@@ -60,7 +54,6 @@ class HomeHeader extends StatelessWidget {
               ),
             );
           },
-
           icon: const Icon(
             Icons.settings,
           ),
