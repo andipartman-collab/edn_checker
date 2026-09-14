@@ -25,7 +25,7 @@ class EDNCheckerApp extends StatelessWidget {
       },
       child: MaterialApp(
         debugShowCheckedModeBanner: false,
-        title: 'EDN Checker',
+        title: 'EDN Scanner',
         theme: AppTheme.light(),
         home: const HomeScreen(),
       ),
