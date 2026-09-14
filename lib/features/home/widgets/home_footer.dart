@@ -21,7 +21,7 @@ class HomeFooter extends StatelessWidget {
         SizedBox(height: 4),
 
         Text(
-          "Toyota EDN Checker",
+          "EDN Scanner",
           style: TextStyle(
             color: Colors.grey,
             fontSize: 12,
