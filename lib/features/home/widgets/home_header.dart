@@ -9,32 +9,42 @@ class HomeHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         Image.asset(
           'assets/images/edn_scanner_logo.png',
-          width: 90,
-          height: 50,
+          width: 64,
+          height: 64,
           fit: BoxFit.contain,
         ),
 
-        const SizedBox(width: 12),
+        const SizedBox(width: 10),
 
         const Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Text(
-                "EDN SCANNER",
-                style: TextStyle(
-                  fontSize: 28,
-                  fontWeight: FontWeight.bold,
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  'EDN SCANNER',
+                  maxLines: 1,
+                  style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    height: 1.0,
+                  ),
                 ),
               ),
 
-              SizedBox(height: 1),
+              SizedBox(height: 5),
 
               Text(
-                "Electronic Delivery Note Scanner",
+                'Electronic Delivery Note Scanner',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
                 style: TextStyle(
                   color: Colors.grey,
                   fontSize: 10,
@@ -44,8 +54,10 @@ class HomeHeader extends StatelessWidget {
           ),
         ),
 
+        const SizedBox(width: 6),
+
         IconButton(
-          tooltip: "Pengaturan",
+          tooltip: 'Pengaturan',
           onPressed: () {
             Navigator.push(
               context,
@@ -56,6 +68,12 @@ class HomeHeader extends StatelessWidget {
           },
           icon: const Icon(
             Icons.settings,
+            size: 28,
+          ),
+          padding: EdgeInsets.zero,
+          constraints: const BoxConstraints(
+            minWidth: 44,
+            minHeight: 44,
           ),
         ),
       ],
