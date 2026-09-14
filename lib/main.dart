@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import 'core/theme/app_theme.dart';
 import 'features/home/home_screen.dart';
 import 'providers/scanner_provider.dart';
 
@@ -25,6 +26,7 @@ class EDNCheckerApp extends StatelessWidget {
       child: MaterialApp(
         debugShowCheckedModeBanner: false,
         title: 'EDN Checker',
+        theme: AppTheme.light(),
         home: const HomeScreen(),
       ),
     );
