@@ -19,7 +19,6 @@ class _UploadScreenState extends State<UploadScreen> {
   final EdnReader reader = EdnReader();
 
   String fileName = "Belum ada file dipilih";
-
   EdnModel? edn;
 
   Future pilihFile() async {
@@ -34,10 +33,6 @@ class _UploadScreenState extends State<UploadScreen> {
         excel,
         result["fileName"],
       );
-
-      // ============================
-      // Simpan ke Provider
-      // ============================
 
       final provider = Provider.of<ScannerProvider>(
         context,
@@ -79,21 +74,37 @@ class _UploadScreenState extends State<UploadScreen> {
 
   Widget summaryCard() {
     if (edn == null) {
-      return const Card(
+      return Card(
         child: Padding(
-          padding: EdgeInsets.all(20),
-          child: Center(
-            child: Text(
-              "Belum ada EDN",
-              style: TextStyle(fontSize: 18),
-            ),
+          padding: const EdgeInsets.symmetric(
+            horizontal: 20,
+            vertical: 24,
+          ),
+          child: Column(
+            children: [
+              Icon(
+                Icons.description_outlined,
+                size: 42,
+                color: Colors.grey.shade400,
+              ),
+              const SizedBox(height: 10),
+              Text(
+                "Belum ada EDN",
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+              const SizedBox(height: 4),
+              Text(
+                "File EDN yang dipilih akan tampil di sini.",
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+            ],
           ),
         ),
       );
     }
 
     return Card(
-      elevation: 3,
       child: Padding(
         padding: const EdgeInsets.all(18),
         child: Column(
@@ -101,32 +112,37 @@ class _UploadScreenState extends State<UploadScreen> {
             const Icon(
               Icons.check_circle,
               color: Colors.green,
-              size: 50,
+              size: 46,
             ),
-            const SizedBox(height: 15),
+            const SizedBox(height: 12),
             Text(
               edn!.fileName,
               textAlign: TextAlign.center,
               style: const TextStyle(
                 fontWeight: FontWeight.bold,
-                fontSize: 18,
+                fontSize: 17,
               ),
             ),
             const SizedBox(height: 20),
             Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
-                infoBox(
-                  "Case",
-                  edn!.totalCase.toString(),
+                Expanded(
+                  child: infoBox(
+                    "Case",
+                    edn!.totalCase.toString(),
+                  ),
                 ),
-                infoBox(
-                  "Part No",
-                  edn!.totalPartNumber.toString(),
+                Expanded(
+                  child: infoBox(
+                    "Part No",
+                    edn!.totalPartNumber.toString(),
+                  ),
                 ),
-                infoBox(
-                  "Qty",
-                  edn!.totalTarget.toString(),
+                Expanded(
+                  child: infoBox(
+                    "Qty",
+                    edn!.totalTarget.toString(),
+                  ),
                 ),
               ],
             ),
@@ -147,11 +163,14 @@ class _UploadScreenState extends State<UploadScreen> {
           style: const TextStyle(
             fontSize: 22,
             fontWeight: FontWeight.bold,
-            color: Colors.red,
+            color: Color(0xFFF44336),
           ),
         ),
         const SizedBox(height: 4),
-        Text(title),
+        Text(
+          title,
+          style: Theme.of(context).textTheme.bodySmall,
+        ),
       ],
     );
   }
@@ -163,6 +182,7 @@ class _UploadScreenState extends State<UploadScreen> {
 
     return Expanded(
       child: ListView.builder(
+        padding: const EdgeInsets.only(top: 2),
         itemCount: edn!.cases.length,
         itemBuilder: (context, index) {
           final caseModel = edn!.cases[index];
@@ -170,9 +190,11 @@ class _UploadScreenState extends State<UploadScreen> {
           return Card(
             margin: const EdgeInsets.only(bottom: 10),
             child: ExpansionTile(
+              shape: const RoundedRectangleBorder(),
+              collapsedShape: const RoundedRectangleBorder(),
               leading: const Icon(
-                Icons.inventory_2,
-                color: Colors.red,
+                Icons.inventory_2_outlined,
+                color: Color(0xFFF44336),
               ),
               title: Text(
                 caseModel.caseNo,
@@ -187,7 +209,7 @@ class _UploadScreenState extends State<UploadScreen> {
                 return ListTile(
                   dense: true,
                   leading: const Icon(
-                    Icons.settings,
+                    Icons.settings_outlined,
                     size: 18,
                   ),
                   title: Text(part.partNo),
@@ -210,32 +232,24 @@ class _UploadScreenState extends State<UploadScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey.shade100,
       appBar: AppBar(
         title: const Text("Upload EDN"),
-        backgroundColor: Colors.red,
-        foregroundColor: Colors.white,
       ),
       body: Padding(
-        padding: const EdgeInsets.all(15),
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
         child: Column(
           children: [
             SizedBox(
               width: double.infinity,
-              height: 50,
               child: ElevatedButton.icon(
                 onPressed: pilihFile,
-                icon: const Icon(Icons.folder_open),
+                icon: const Icon(Icons.folder_open_outlined),
                 label: const Text("PILIH FILE EXCEL"),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.red,
-                  foregroundColor: Colors.white,
-                ),
               ),
             ),
-            const SizedBox(height: 15),
+            const SizedBox(height: 16),
             summaryCard(),
-            const SizedBox(height: 10),
+            const SizedBox(height: 12),
             caseViewer(),
           ],
         ),
