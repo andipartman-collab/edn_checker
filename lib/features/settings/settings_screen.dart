@@ -1,9 +1,73 @@
 import 'package:flutter/material.dart';
 
+import '../../core/services/local_storage_service.dart';
 import 'edit_profile_screen.dart';
 
-class SettingsScreen extends StatelessWidget {
+class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
+
+  @override
+  State<SettingsScreen> createState() =>
+      _SettingsScreenState();
+}
+
+class _SettingsScreenState
+    extends State<SettingsScreen> {
+  final LocalStorageService _storage =
+      LocalStorageService();
+
+  bool _scannerSoundEnabled = true;
+  bool _loadingSoundSetting = true;
+
+  @override
+  void initState() {
+    super.initState();
+
+    _loadSoundSetting();
+  }
+
+  Future<void> _loadSoundSetting() async {
+    final enabled =
+        await _storage.getScannerSoundEnabled();
+
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {
+      _scannerSoundEnabled = enabled;
+      _loadingSoundSetting = false;
+    });
+  }
+
+  Future<void> _setScannerSound(
+    bool value,
+  ) async {
+    setState(() {
+      _scannerSoundEnabled = value;
+    });
+
+    await _storage.setScannerSoundEnabled(
+      value,
+    );
+
+    if (!mounted) {
+      return;
+    }
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          value
+              ? 'Suara scanner diaktifkan'
+              : 'Suara scanner dimatikan',
+        ),
+        duration:
+            const Duration(milliseconds: 1200),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -12,7 +76,7 @@ class SettingsScreen extends StatelessWidget {
 
       appBar: AppBar(
         title: const Text(
-          "Pengaturan",
+          'Pengaturan',
           style: TextStyle(
             fontWeight: FontWeight.bold,
           ),
@@ -34,7 +98,8 @@ class SettingsScreen extends StatelessWidget {
               elevation: 2,
 
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
+                borderRadius:
+                    BorderRadius.circular(16),
               ),
 
               child: ListTile(
@@ -50,7 +115,8 @@ class SettingsScreen extends StatelessWidget {
 
                   decoration: BoxDecoration(
                     color: Colors.blue.shade50,
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius:
+                        BorderRadius.circular(12),
                   ),
 
                   child: Icon(
@@ -60,14 +126,14 @@ class SettingsScreen extends StatelessWidget {
                 ),
 
                 title: const Text(
-                  "Edit Profile",
+                  'Edit Profile',
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
                   ),
                 ),
 
                 subtitle: const Text(
-                  "Nama, kode, dan alamat dealer",
+                  'Nama, kode, dan alamat dealer',
                 ),
 
                 trailing: const Icon(
@@ -96,7 +162,8 @@ class SettingsScreen extends StatelessWidget {
               elevation: 2,
 
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
+                borderRadius:
+                    BorderRadius.circular(16),
               ),
 
               child: SwitchListTile(
@@ -112,32 +179,40 @@ class SettingsScreen extends StatelessWidget {
 
                   decoration: BoxDecoration(
                     color: Colors.green.shade50,
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius:
+                        BorderRadius.circular(12),
                   ),
 
                   child: Icon(
-                    Icons.volume_up,
-                    color: Colors.green.shade700,
+                    _scannerSoundEnabled
+                        ? Icons.volume_up
+                        : Icons.volume_off,
+                    color: _scannerSoundEnabled
+                        ? Colors.green.shade700
+                        : Colors.grey.shade600,
                   ),
                 ),
 
                 title: const Text(
-                  "Suara Scanner",
+                  'Suara Scanner',
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
                   ),
                 ),
 
-                subtitle: const Text(
-                  "Aktifkan suara beep saat scanning",
+                subtitle: Text(
+                  _loadingSoundSetting
+                      ? 'Memuat pengaturan...'
+                      : _scannerSoundEnabled
+                          ? 'Aktifkan suara beep saat scanning'
+                          : 'Suara beep dimatikan',
                 ),
 
-                value: true,
+                value: _scannerSoundEnabled,
 
-                onChanged: (value) {
-                  // Akan kita hubungkan
-                  // ke LocalStorageService
-                },
+                onChanged: _loadingSoundSetting
+                    ? null
+                    : _setScannerSound,
               ),
             ),
 
@@ -164,7 +239,7 @@ class SettingsScreen extends StatelessWidget {
             // ---------------------------------
 
             const Text(
-              "EDN Checker",
+              'EDN Checker',
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
@@ -178,7 +253,7 @@ class SettingsScreen extends StatelessWidget {
             // ---------------------------------
 
             const Text(
-              "Version 1.0.0",
+              'Version 1.0.0',
               style: TextStyle(
                 color: Colors.grey,
               ),
@@ -191,7 +266,7 @@ class SettingsScreen extends StatelessWidget {
             // ---------------------------------
 
             const Text(
-              "Developed by",
+              'Developed by',
               style: TextStyle(
                 fontSize: 12,
                 color: Colors.grey,
@@ -201,7 +276,7 @@ class SettingsScreen extends StatelessWidget {
             const SizedBox(height: 3),
 
             const Text(
-              "Thoyi Lukman Hakim",
+              'Thoyi Lukman Hakim',
               style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.bold,
