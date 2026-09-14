@@ -16,6 +16,9 @@ class LocalStorageService {
   static const String _dealerProfileKey =
       'dealer_profile';
 
+  static const String _scannerSoundKey =
+      'scanner_sound_enabled';
+
   // ==========================================
   // SAVE EDN
   // ==========================================
@@ -28,11 +31,9 @@ class LocalStorageService {
 
     final data = {
       'fileName': edn.fileName,
-
       'cases': edn.cases.map((caseModel) {
         return {
           'caseNo': caseModel.caseNo,
-
           'parts': caseModel.parts.map((part) {
             return {
               'partNo': part.partNo,
@@ -123,6 +124,32 @@ class LocalStorageService {
   }
 
   // ==========================================
+  // SCANNER SOUND
+  // ==========================================
+
+  Future<bool> getScannerSoundEnabled() async {
+    final prefs =
+        await SharedPreferences.getInstance();
+
+    return prefs.getBool(
+          _scannerSoundKey,
+        ) ??
+        true;
+  }
+
+  Future<void> setScannerSoundEnabled(
+    bool enabled,
+  ) async {
+    final prefs =
+        await SharedPreferences.getInstance();
+
+    await prefs.setBool(
+      _scannerSoundKey,
+      enabled,
+    );
+  }
+
+  // ==========================================
   // SAVE DEALER PROFILE
   // ==========================================
 
@@ -171,10 +198,8 @@ class LocalStorageService {
       return {
         'dealerName':
             data['dealerName']?.toString() ?? '',
-
         'dealerCode':
             data['dealerCode']?.toString() ?? '',
-
         'dealerAddress':
             data['dealerAddress']?.toString() ?? '',
       };
